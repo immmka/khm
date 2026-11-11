@@ -26,39 +26,34 @@
       height: 100vh;
       overflow: hidden;
     }
-    #app {
-      display: flex;
-      height: 100vh;
-    }
+    #app { display: flex; height: 100vh; }
     #sidebar {
-      width: 340px;
+      width: 360px;
       background: var(--panel);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       z-index: 1000;
     }
-    #sidebar.hidden { display: none; }
     .sidebar-header {
-      padding: 16px;
+      padding: 14px 16px;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
     }
-    .sidebar-header h1 {
-      font-size: 18px;
-      font-weight: 600;
-    }
+    .sidebar-header h1 { font-size: 17px; font-weight: 600; }
     .btn {
       background: var(--accent);
       color: white;
       border: none;
       padding: 8px 12px;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       font-weight: 500;
+      white-space: nowrap;
     }
     .btn:hover { opacity: 0.9; }
     .btn-secondary {
@@ -66,22 +61,21 @@
       border: 1px solid var(--border);
       color: var(--text);
     }
-    .btn-danger { background: var(--red); }
-    .btn-sm { padding: 6px 10px; font-size: 13px; }
+    .btn-sm { padding: 6px 10px; font-size: 12px; }
     .filters {
-      padding: 12px 16px;
+      padding: 10px 16px;
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
       border-bottom: 1px solid var(--border);
     }
     .filter-btn {
-      padding: 6px 10px;
+      padding: 5px 10px;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: transparent;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
     }
     .filter-btn.active {
@@ -92,32 +86,33 @@
     .filter-btn.green.active { background: var(--green); border-color: var(--green); }
     .filter-btn.red.active { background: var(--red); border-color: var(--red); }
     .filter-btn.yellow.active { background: var(--yellow); border-color: var(--yellow); color: #000; }
-    #places-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
+    .stats {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
     }
+    #places-list { flex: 1; overflow-y: auto; padding: 8px; }
     .place-item {
       background: #0f172a;
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 8px;
+      padding: 11px;
+      margin-bottom: 7px;
       cursor: pointer;
-      transition: border-color 0.15s;
     }
     .place-item:hover { border-color: var(--accent); }
     .place-item .name {
       font-weight: 600;
-      font-size: 15px;
-      margin-bottom: 4px;
+      font-size: 14px;
+      margin-bottom: 3px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
     }
     .status-dot {
-      width: 10px;
-      height: 10px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -125,23 +120,15 @@
     .status-dot.not { background: var(--red); }
     .status-dot.potential { background: var(--yellow); }
     .status-dot.other { background: var(--blue); }
-    .place-item .meta {
-      font-size: 13px;
-      color: var(--muted);
-      line-height: 1.4;
-    }
+    .place-item .meta { font-size: 12px; color: var(--muted); line-height: 1.4; }
     .sidebar-footer {
-      padding: 12px 16px;
+      padding: 10px 16px;
       border-top: 1px solid var(--border);
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
-    #map {
-      flex: 1;
-      height: 100%;
-    }
-    /* Mobile */
+    #map { flex: 1; height: 100%; }
     .mobile-toggle {
       display: none;
       position: absolute;
@@ -151,27 +138,24 @@
       background: var(--panel);
       border: 1px solid var(--border);
       color: var(--text);
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 10px;
-      font-size: 20px;
+      font-size: 18px;
       cursor: pointer;
     }
     @media (max-width: 768px) {
       #sidebar {
         position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
+        left: 0; top: 0; bottom: 0;
         width: 100%;
-        max-width: 360px;
+        max-width: 340px;
         transform: translateX(-100%);
         transition: transform 0.25s ease;
       }
       #sidebar.open { transform: translateX(0); }
       .mobile-toggle { display: flex; align-items: center; justify-content: center; }
     }
-    /* Modal */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -193,47 +177,41 @@
       overflow-y: auto;
       padding: 20px;
     }
-    .modal h2 {
-      font-size: 18px;
-      margin-bottom: 16px;
-    }
-    .form-group {
-      margin-bottom: 14px;
-    }
+    .modal h2 { font-size: 17px; margin-bottom: 14px; }
+    .form-group { margin-bottom: 12px; }
     .form-group label {
       display: block;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
     .form-group input,
-    .form-group select,
     .form-group textarea {
       width: 100%;
-      padding: 10px 12px;
+      padding: 9px 11px;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: #0f172a;
       color: var(--text);
-      font-size: 15px;
+      font-size: 14px;
     }
-    .form-group textarea { min-height: 80px; resize: vertical; }
+    .form-group textarea { min-height: 70px; resize: vertical; }
     .status-options {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
     }
     .status-option {
       flex: 1;
-      min-width: 90px;
-      padding: 10px;
+      min-width: 80px;
+      padding: 9px 6px;
       border-radius: 8px;
       border: 2px solid var(--border);
       background: transparent;
       color: var(--text);
       cursor: pointer;
       text-align: center;
-      font-size: 13px;
+      font-size: 12px;
     }
     .status-option.selected.working { border-color: var(--green); background: rgba(34,197,94,0.15); }
     .status-option.selected.not { border-color: var(--red); background: rgba(239,68,68,0.15); }
@@ -241,31 +219,34 @@
     .status-option.selected.other { border-color: var(--blue); background: rgba(59,130,246,0.15); }
     .modal-actions {
       display: flex;
-      gap: 10px;
-      margin-top: 20px;
+      gap: 8px;
+      margin-top: 16px;
     }
     .modal-actions .btn { flex: 1; }
     .empty-state {
       text-align: center;
-      padding: 40px 20px;
+      padding: 40px 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .loading {
+      text-align: center;
+      padding: 30px;
       color: var(--muted);
       font-size: 14px;
     }
-    .hint {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 8px;
-      line-height: 1.4;
-    }
+    .no-coords { opacity: 0.55; }
   </style>
 </head>
 <body>
-  <button class="mobile-toggle" id="toggleSidebar" title="Меню">☰</button>
+  <button class="mobile-toggle" id="toggleSidebar">☰</button>
   <div id="app">
     <aside id="sidebar">
       <div class="sidebar-header">
         <h1>Моя карта</h1>
-        <button class="btn btn-sm" id="addBtn">+ Добавить</button>
+        <button class="btn btn-sm" id="refreshBtn">Обновить</button>
       </div>
       <div class="filters">
         <button class="filter-btn active" data-filter="all">Все</button>
@@ -273,55 +254,60 @@
         <button class="filter-btn red" data-filter="not">Не работаю</button>
         <button class="filter-btn yellow" data-filter="potential">Потенциал</button>
       </div>
+      <div class="stats" id="stats">Загрузка...</div>
       <div id="places-list">
-        <div class="empty-state">Пока нет точек.<br>Нажми «+ Добавить» или кликни на карту.</div>
+        <div class="loading">Загружаю данные из Google Таблицы...</div>
       </div>
       <div class="sidebar-footer">
         <button class="btn btn-secondary btn-sm" id="exportBtn">Экспорт</button>
-        <button class="btn btn-secondary btn-sm" id="importBtn">Импорт</button>
-        <input type="file" id="importFile" accept=".json" style="display:none" />
       </div>
     </aside>
     <div id="map"></div>
   </div>
 
-  <!-- Modal -->
   <div class="modal-overlay" id="modal">
     <div class="modal">
-      <h2 id="modalTitle">Новая точка</h2>
+      <h2 id="modalTitle">Заведение</h2>
       <div class="form-group">
-        <label>Название *</label>
-        <input type="text" id="f-name" placeholder="Например: Кафе на Арбате" />
+        <label>Название заведения</label>
+        <input type="text" id="f-name" readonly />
+      </div>
+      <div class="form-group">
+        <label>ООО / Компания</label>
+        <input type="text" id="f-company" readonly />
+      </div>
+      <div class="form-group">
+        <label>Менеджер</label>
+        <input type="text" id="f-manager" readonly />
       </div>
       <div class="form-group">
         <label>Статус</label>
         <div class="status-options">
-          <button type="button" class="status-option working selected" data-status="working">Работаю</button>
+          <button type="button" class="status-option working" data-status="working">Работаю</button>
           <button type="button" class="status-option not" data-status="not">Не работаю</button>
           <button type="button" class="status-option potential" data-status="potential">Потенциал</button>
           <button type="button" class="status-option other" data-status="other">Другое</button>
         </div>
       </div>
       <div class="form-group">
-        <label>Телефон / контакт</label>
-        <input type="text" id="f-contact" placeholder="+7..." />
+        <label>Телефон</label>
+        <input type="text" id="f-phone" readonly />
       </div>
       <div class="form-group">
         <label>Заметки</label>
-        <textarea id="f-notes" placeholder="Любая полезная информация..."></textarea>
+        <textarea id="f-notes" readonly></textarea>
       </div>
       <div class="hint" id="coordHint"></div>
       <div class="modal-actions">
-        <button class="btn btn-secondary" id="cancelBtn">Отмена</button>
-        <button class="btn btn-danger" id="deleteBtn" style="display:none">Удалить</button>
-        <button class="btn" id="saveBtn">Сохранить</button>
+        <button class="btn btn-secondary" id="closeBtn">Закрыть</button>
       </div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // ===== Icons =====
+    const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/11nvKladxDSIc1zqJtOQ0_M-KD_su-bR2a1bBQfsN894/export?format=csv&gid=0';
+
     const iconUrls = {
       working: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
       not: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
@@ -341,68 +327,28 @@
       });
     }
 
-    // ===== State =====
-    let places = JSON.parse(localStorage.getItem('myMapPlaces') || '[]');
-    let markers = {}; // id -> L.Marker
+    let places = [];
+    let markers = {};
     let currentFilter = 'all';
-    let editingId = null;
-    let pendingLatLng = null;
-    let selectedStatus = 'working';
 
-    // ===== Map =====
     const map = L.map('map').setView([55.7558, 37.6173], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    map.on('click', (e) => {
-      pendingLatLng = e.latlng;
-      openModal();
-    });
-
-    // ===== Helpers =====
-    function save() {
-      localStorage.setItem('myMapPlaces', JSON.stringify(places));
-    }
-
     function statusLabel(s) {
-      return { working: 'Работаю', not: 'Не работаю', potential: 'Потенциал', other: 'Другое' }[s] || s;
+      const m = { working: 'Работаю', not: 'Не работаю', potential: 'Потенциал', other: 'Другое' };
+      return m[s] || s || '—';
     }
 
-    function renderList() {
-      const list = document.getElementById('places-list');
-      const filtered = currentFilter === 'all' ? places : places.filter(p => p.status === currentFilter);
-
-      if (filtered.length === 0) {
-        list.innerHTML = `<div class="empty-state">${places.length === 0 ? 'Пока нет точек.<br>Нажми «+ Добавить» или кликни на карту.' : 'Нет точек с этим статусом.'}</div>`;
-        return;
-      }
-
-      list.innerHTML = filtered.map(p => `
-        <div class="place-item" data-id="${p.id}">
-          <div class="name">
-            <span class="status-dot ${p.status}"></span>
-            ${escapeHtml(p.name)}
-          </div>
-          <div class="meta">
-            ${statusLabel(p.status)}
-            ${p.contact ? ' · ' + escapeHtml(p.contact) : ''}
-            ${p.notes ? '<br>' + escapeHtml(p.notes).slice(0, 80) + (p.notes.length > 80 ? '…' : '') : ''}
-          </div>
-        </div>
-      `).join('');
-
-      list.querySelectorAll('.place-item').forEach(el => {
-        el.addEventListener('click', () => {
-          const id = el.dataset.id;
-          const place = places.find(p => p.id === id);
-          if (place) {
-            map.setView([place.lat, place.lng], 16);
-            openModal(place);
-          }
-        });
-      });
+    function normalizeStatus(raw) {
+      if (!raw) return 'potential';
+      const s = String(raw).toLowerCase().trim();
+      if (['working', 'работаю', 'work', 'да'].includes(s)) return 'working';
+      if (['not', 'не работаю', 'no', 'нет'].includes(s)) return 'not';
+      if (['potential', 'потенциал', 'возможно'].includes(s)) return 'potential';
+      return 'other';
     }
 
     function escapeHtml(text) {
@@ -411,13 +357,126 @@
       return div.innerHTML;
     }
 
-    function addMarkerToMap(place) {
-      if (markers[place.id]) {
-        map.removeLayer(markers[place.id]);
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
       }
+      result.push(current);
+      return result;
+    }
+
+    function parseCSV(text) {
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length < 2) return [];
+      const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+      const result = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        const obj = {};
+        headers.forEach((h, idx) => { obj[h] = (values[idx] || '').trim(); });
+        result.push(obj);
+      }
+      return result;
+    }
+
+    function loadFromSheet() {
+      document.getElementById('places-list').innerHTML = '<div class="loading">Загружаю данные из Google Таблицы...</div>';
+      document.getElementById('stats').textContent = 'Загрузка...';
+
+      fetch(SHEET_CSV + '&_=' + Date.now())
+        .then(r => r.text())
+        .then(text => {
+          const rows = parseCSV(text);
+          places = rows.map((row, idx) => {
+            const name = row['название заведения'] || row['название'] || '';
+            const company = row['ооо'] || '';
+            const manager = row['менеджер'] || '';
+            const status = normalizeStatus(row['status'] || row['статус']);
+            const phone = row['phone'] || row['телефон'] || '';
+            const notes = row['notes'] || row['заметки'] || '';
+            const lat = parseFloat(row['lat'] || row['широта']);
+            const lng = parseFloat(row['lng'] || row['lon'] || row['долгота']);
+            return {
+              id: row['id'] || String(idx + 1),
+              name: name || company || 'Без названия',
+              company,
+              manager,
+              status,
+              phone,
+              notes,
+              lat: isNaN(lat) ? null : lat,
+              lng: isNaN(lng) ? null : lng
+            };
+          }).filter(p => p.name && p.name !== 'Без названия');
+
+          refreshMarkers();
+          renderList();
+          updateStats();
+        })
+        .catch(err => {
+          document.getElementById('places-list').innerHTML =
+            '<div class="empty-state">Ошибка загрузки таблицы.<br>' + escapeHtml(err.message) + '<br><br>Проверьте доступ «Все, у кого есть ссылка».</div>';
+          document.getElementById('stats').textContent = 'Ошибка';
+        });
+    }
+
+    function updateStats() {
+      const total = places.length;
+      const withCoords = places.filter(p => p.lat && p.lng).length;
+      const working = places.filter(p => p.status === 'working').length;
+      const notW = places.filter(p => p.status === 'not').length;
+      const potential = places.filter(p => p.status === 'potential').length;
+      document.getElementById('stats').textContent =
+        'Всего: ' + total + ' · На карте: ' + withCoords + ' · Работаю: ' + working + ' · Не работаю: ' + notW + ' · Потенциал: ' + potential;
+    }
+
+    function renderList() {
+      const list = document.getElementById('places-list');
+      const filtered = currentFilter === 'all' ? places : places.filter(p => p.status === currentFilter);
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty-state">' + (places.length === 0 ? 'В таблице пока нет заведений.' : 'Нет заведений с этим статусом.') + '</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(p => {
+        return '<div class="place-item ' + ((!p.lat || !p.lng) ? 'no-coords' : '') + '" data-id="' + p.id + '">' +
+          '<div class="name"><span class="status-dot ' + p.status + '"></span>' + escapeHtml(p.name) + '</div>' +
+          '<div class="meta">' +
+            (p.company ? escapeHtml(p.company) + '<br>' : '') +
+            (p.manager ? 'Менеджер: ' + escapeHtml(p.manager) : '') +
+            ((!p.lat || !p.lng) ? '<br><span style="color:#f59e0b">Нет координат</span>' : '') +
+          '</div></div>';
+      }).join('');
+
+      list.querySelectorAll('.place-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const place = places.find(p => p.id === el.dataset.id);
+          if (place) {
+            if (place.lat && place.lng) map.setView([place.lat, place.lng], 16);
+            openModal(place);
+          }
+        });
+      });
+    }
+
+    function addMarkerToMap(place) {
+      if (!place.lat || !place.lng) return;
+      if (markers[place.id]) map.removeLayer(markers[place.id]);
       const marker = L.marker([place.lat, place.lng], { icon: makeIcon(place.status) })
         .addTo(map)
-        .bindPopup(`<b>${escapeHtml(place.name)}</b><br>${statusLabel(place.status)}`);
+        .bindPopup('<b>' + escapeHtml(place.name) + '</b><br>' + statusLabel(place.status) + (place.manager ? '<br>' + escapeHtml(place.manager) : ''));
       marker.on('click', () => openModal(place));
       markers[place.id] = marker;
     }
@@ -428,110 +487,32 @@
       places.forEach(addMarkerToMap);
     }
 
-    // ===== Modal =====
-    function openModal(place = null) {
-      editingId = place ? place.id : null;
-      selectedStatus = place ? place.status : 'working';
-
-      document.getElementById('modalTitle').textContent = place ? 'Редактировать' : 'Новая точка';
-      document.getElementById('f-name').value = place ? place.name : '';
-      document.getElementById('f-contact').value = place ? (place.contact || '') : '';
-      document.getElementById('f-notes').value = place ? (place.notes || '') : '';
-      document.getElementById('deleteBtn').style.display = place ? 'block' : 'none';
-
+    function openModal(place) {
+      document.getElementById('modalTitle').textContent = place.name || 'Заведение';
+      document.getElementById('f-name').value = place.name || '';
+      document.getElementById('f-company').value = place.company || '';
+      document.getElementById('f-manager').value = place.manager || '';
+      document.getElementById('f-phone').value = place.phone || '';
+      document.getElementById('f-notes').value = place.notes || '';
       document.querySelectorAll('.status-option').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.status === selectedStatus);
+        btn.classList.toggle('selected', btn.dataset.status === place.status);
       });
-
-      if (place) {
-        document.getElementById('coordHint').textContent = `Координаты: ${place.lat.toFixed(5)}, ${place.lng.toFixed(5)}`;
-      } else if (pendingLatLng) {
-        document.getElementById('coordHint').textContent = `Координаты: ${pendingLatLng.lat.toFixed(5)}, ${pendingLatLng.lng.toFixed(5)}`;
+      if (place.lat && place.lng) {
+        document.getElementById('coordHint').textContent = 'Координаты: ' + place.lat.toFixed(5) + ', ' + place.lng.toFixed(5);
       } else {
-        document.getElementById('coordHint').textContent = 'Кликните на карту, чтобы указать место, или заполните и сохраните (точка будет в центре карты).';
+        document.getElementById('coordHint').textContent = 'Координаты ещё не указаны. Добавьте lat и lng в таблице.';
       }
-
       document.getElementById('modal').classList.add('show');
-      document.getElementById('f-name').focus();
     }
 
     function closeModal() {
       document.getElementById('modal').classList.remove('show');
-      editingId = null;
-      pendingLatLng = null;
     }
 
-    // ===== Events =====
-    document.getElementById('addBtn').addEventListener('click', () => {
-      pendingLatLng = map.getCenter();
-      openModal();
-    });
+    document.getElementById('closeBtn').addEventListener('click', closeModal);
+    document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+    document.getElementById('refreshBtn').addEventListener('click', loadFromSheet);
 
-    document.getElementById('cancelBtn').addEventListener('click', closeModal);
-    document.getElementById('modal').addEventListener('click', (e) => {
-      if (e.target.id === 'modal') closeModal();
-    });
-
-    document.querySelectorAll('.status-option').forEach(btn => {
-      btn.addEventListener('click', () => {
-        selectedStatus = btn.dataset.status;
-        document.querySelectorAll('.status-option').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-      });
-    });
-
-    document.getElementById('saveBtn').addEventListener('click', () => {
-      const name = document.getElementById('f-name').value.trim();
-      if (!name) {
-        alert('Введите название');
-        return;
-      }
-
-      const contact = document.getElementById('f-contact').value.trim();
-      const notes = document.getElementById('f-notes').value.trim();
-
-      if (editingId) {
-        const place = places.find(p => p.id === editingId);
-        if (place) {
-          place.name = name;
-          place.status = selectedStatus;
-          place.contact = contact;
-          place.notes = notes;
-          addMarkerToMap(place);
-        }
-      } else {
-        const latlng = pendingLatLng || map.getCenter();
-        const place = {
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-          name,
-          status: selectedStatus,
-          contact,
-          notes,
-          lat: latlng.lat,
-          lng: latlng.lng,
-          created: new Date().toISOString()
-        };
-        places.push(place);
-        addMarkerToMap(place);
-      }
-      save();
-      renderList();
-      closeModal();
-    });
-
-    document.getElementById('deleteBtn').addEventListener('click', () => {
-      if (!editingId || !confirm('Удалить эту точку?')) return;
-      places = places.filter(p => p.id !== editingId);
-      if (markers[editingId]) {
-        map.removeLayer(markers[editingId]);
-        delete markers[editingId];
-      }
-      save();
-      renderList();
-      closeModal();
-    });
-
-    // Filters
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         currentFilter = btn.dataset.filter;
@@ -541,52 +522,22 @@
       });
     });
 
-    // Export / Import
     document.getElementById('exportBtn').addEventListener('click', () => {
       const data = JSON.stringify(places, null, 2);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `my-map-places-${new Date().toISOString().slice(0,10)}.json`;
+      a.download = 'places-' + new Date().toISOString().slice(0,10) + '.json';
       a.click();
       URL.revokeObjectURL(url);
     });
 
-    document.getElementById('importBtn').addEventListener('click', () => {
-      document.getElementById('importFile').click();
-    });
-
-    document.getElementById('importFile').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        try {
-          const imported = JSON.parse(ev.target.result);
-          if (!Array.isArray(imported)) throw new Error('Неверный формат');
-          if (confirm(`Импортировать ${imported.length} точек? Текущие данные будут заменены.`)) {
-            places = imported;
-            save();
-            refreshMarkers();
-            renderList();
-          }
-        } catch (err) {
-          alert('Ошибка чтения файла: ' + err.message);
-        }
-      };
-      reader.readAsText(file);
-      e.target.value = '';
-    });
-
-    // Mobile toggle
     document.getElementById('toggleSidebar').addEventListener('click', () => {
       document.getElementById('sidebar').classList.toggle('open');
     });
 
-    // Init
-    refreshMarkers();
-    renderList();
+    loadFromSheet();
   </script>
 </body>
 </html>
