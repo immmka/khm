@@ -6,43 +6,41 @@
   <title>Моя карта клиентов — Москва</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    :root {
-      --bg: #0f172a; --panel: #1e293b; --border: #334155; --text: #f1f5f9;
-      --muted: #94a3b8; --accent: #3b82f6; --green: #22c55e; --red: #ef4444; --yellow: #eab308;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
-    #app { display: flex; height: 100vh; }
-    #sidebar { width: 360px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 1000; }
-    .sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .sidebar-header h1 { font-size: 17px; font-weight: 600; }
-    .btn { background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
-    .filters { padding: 10px 16px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
-    .filter-btn { padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
-    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-    .filter-btn.green.active { background: var(--green); border-color: var(--green); }
-    .filter-btn.red.active { background: var(--red); border-color: var(--red); }
-    .filter-btn.yellow.active { background: var(--yellow); border-color: var(--yellow); color: #000; }
-    .cat-filters { padding: 8px 16px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
-    .stats { font-size: 12px; color: var(--muted); padding: 8px 16px; border-bottom: 1px solid var(--border); }
-    #places-list { flex: 1; overflow-y: auto; padding: 8px; }
-    .place-item { background: #0f172a; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 7px; cursor: pointer; }
-    .place-item:hover { border-color: var(--accent); }
-    .place-item .name { font-weight: 600; font-size: 14px; margin-bottom: 3px; display: flex; align-items: center; gap: 7px; }
-    .status-dot { width: 9px; height: 9px; border-radius: 50%; }
-    .status-dot.working { background: var(--green); }
-    .status-dot.not { background: var(--red); }
-    .status-dot.potential { background: var(--yellow); }
-    .status-dot.other { background: var(--accent); }
-    .place-item .meta { font-size: 12px; color: var(--muted); line-height: 1.4; }
-    #map { flex: 1; height: 100%; }
-    .mobile-toggle { display: none; position: absolute; top: 12px; left: 12px; z-index: 1001; background: var(--panel); border: 1px solid var(--border); color: var(--text); width: 42px; height: 42px; border-radius: 10px; font-size: 18px; }
-    @media (max-width: 768px) {
-      #sidebar { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; max-width: 340px; transform: translateX(-100%); transition: transform 0.25s; }
-      #sidebar.open { transform: translateX(0); }
-      .mobile-toggle { display: flex; align-items: center; justify-content: center; }
-    }
-    .loading { text-align: center; padding: 30px; color: var(--muted); }
+    :root { --bg:#0f172a; --panel:#1e293b; --border:#334155; --text:#f1f5f9; --muted:#94a3b8; --accent:#3b82f6; --green:#22c55e; --red:#ef4444; --yellow:#eab308; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+    #app{display:flex;height:100vh}
+    #sidebar{width:380px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:1000}
+    .sidebar-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .btn{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer}
+    .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+    .filters,.cat-filters{padding:10px 16px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+    .filter-btn{padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer}
+    .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .filter-btn.green.active{background:var(--green);border-color:var(--green)}
+    .filter-btn.red.active{background:var(--red);border-color:var(--red)}
+    .filter-btn.yellow.active{background:var(--yellow);border-color:var(--yellow);color:#000}
+    .stats{font-size:12px;color:var(--muted);padding:8px 16px;border-bottom:1px solid var(--border)}
+    #places-list{flex:1;overflow-y:auto;padding:8px}
+    .place-item{background:#0f172a;border:1px solid var(--border);border-radius:10px;padding:11px;margin-bottom:7px;cursor:pointer}
+    .place-item:hover{border-color:var(--accent)}
+    .place-item .name{font-weight:600;font-size:14px;margin-bottom:3px;display:flex;align-items:center;gap:7px}
+    .status-dot{width:9px;height:9px;border-radius:50%}
+    .status-dot.working{background:var(--green)}
+    .status-dot.not{background:var(--red)}
+    .status-dot.potential{background:var(--yellow)}
+    .place-item .meta{font-size:12px;color:var(--muted);line-height:1.4}
+    #map{flex:1;height:100%}
+    .mobile-toggle{display:none;position:absolute;top:12px;left:12px;z-index:1001;background:var(--panel);border:1px solid var(--border);color:var(--text);width:42px;height:42px;border-radius:10px;font-size:18px}
+    @media(max-width:768px){#sidebar{position:absolute;left:0;top:0;bottom:0;width:100%;max-width:360px;transform:translateX(-100%);transition:transform .25s}#sidebar.open{transform:translateX(0)}.mobile-toggle{display:flex;align-items:center;justify-content:center}}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
+    .modal-overlay.show{display:flex}
+    .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:420px;padding:20px}
+    .form-group{margin-bottom:12px}
+    .form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+    .form-group input,.form-group select{width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:#0f172a;color:var(--text);font-size:14px}
+    .modal-actions{display:flex;gap:8px;margin-top:16px}
+    .modal-actions .btn{flex:1}
   </style>
 </head>
 <body>
@@ -51,7 +49,7 @@
     <aside id="sidebar">
       <div class="sidebar-header">
         <h1>Моя карта</h1>
-        <button class="btn" id="refreshBtn">Обновить</button>
+        <button class="btn" id="addBtn">+ Добавить</button>
       </div>
       <div class="filters">
         <button class="filter-btn active" data-filter="all">Все</button>
@@ -60,190 +58,185 @@
         <button class="filter-btn yellow" data-filter="potential">Потенциал</button>
       </div>
       <div class="cat-filters" id="catFilters">
-        <button class="filter-btn active" data-cat="all">Все категории</button>
+        <button class="filter-btn active" data-cat="all">Все</button>
         <button class="filter-btn" data-cat="Ресторан">Ресторан</button>
         <button class="filter-btn" data-cat="Бар">Бар</button>
         <button class="filter-btn" data-cat="Клуб">Клуб</button>
         <button class="filter-btn" data-cat="Лаундж">Лаундж</button>
       </div>
       <div class="stats" id="stats">Загрузка...</div>
-      <div id="places-list"><div class="loading">Загружаю данные...</div></div>
+      <div id="places-list"></div>
     </aside>
     <div id="map"></div>
   </div>
 
+  <div class="modal-overlay" id="addModal">
+    <div class="modal">
+      <h2 style="margin-bottom:14px">Добавить заведение</h2>
+      <div class="form-group"><label>Название</label><input id="add-name"></div>
+      <div class="form-group"><label>Адрес</label><input id="add-address" placeholder="ул. Пятницкая, 24"></div>
+      <div class="form-group"><label>Менеджер</label><input id="add-manager"></div>
+      <div class="form-group">
+        <label>Категория</label>
+        <select id="add-category">
+          <option>Ресторан</option><option>Бар</option><option>Клуб</option><option>Лаундж</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelAdd">Отмена</button>
+        <button class="btn" id="saveAdd">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="statusModal">
+    <div class="modal">
+      <h2 style="margin-bottom:14px" id="statusTitle">Сменить статус</h2>
+      <div class="form-group">
+        <label>Новый статус</label>
+        <select id="new-status">
+          <option value="working">Работаю</option>
+          <option value="not">Не работаю</option>
+          <option value="potential">Потенциал</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelStatus">Отмена</button>
+        <button class="btn" id="saveStatus">Сохранить</button>
+        <button class="btn" style="background:#ef4444" id="deleteBtn">Удалить</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/11nvKladxDSIc1zqJtOQ0_M-KD_su-bR2a1bBQfsN894/export?format=csv&gid=0';
+    const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTRotgX74WgwpLeW2F7KZkjxnhn2w5Jd5_IGKh_HRK3k0fVgmzn1zMRjXQirqMUWqUqSORxXY3ig63p/pub?gid=1877556216&single=true&output=csv';
+    const SCRIPT_URL = 'ВСТАВЬ_СЮДА_ССЫЛКУ_APPS_SCRIPT'; // <-- замени после развёртывания
 
     const iconUrls = {
       working: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
       not: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-      potential: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
-      other: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png'
+      potential: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png'
     };
     const shadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png';
+    function makeIcon(s){return L.icon({iconUrl:iconUrls[s]||iconUrls.potential,shadowUrl,iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],shadowSize:[41,41]})}
 
-    function makeIcon(status) {
-      return L.icon({ iconUrl: iconUrls[status] || iconUrls.other, shadowUrl, iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
-    }
+    let places=[], markers={}, currentFilter='all', currentCat='all', currentPlace=null;
+    const map = L.map('map').setView([55.7558,37.6173],11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
 
-    let places = [], markers = {}, currentFilter = 'all', currentCat = 'all';
-    const map = L.map('map').setView([55.7558, 37.6173], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    function parseNum(v){if(!v)return null;const n=parseFloat(String(v).replace(',','.').replace(/\s/g,''));return isNaN(n)?null:n}
+    function normalizeStatus(r){if(!r)return'potential';const s=String(r).toLowerCase();if(['working','работаю','да'].includes(s))return'working';if(['not','не работаю','нет'].includes(s))return'not';return'potential'}
+    function escapeHtml(t){const d=document.createElement('div');d.textContent=t||'';return d.innerHTML}
+    function parseCSVLine(line){const r=[];let c='',q=false;for(let ch of line){if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch}r.push(c);return r}
 
-    function parseNum(val) {
-      if (!val) return null;
-      const n = parseFloat(String(val).replace(',', '.').replace(/\s/g, ''));
-      return isNaN(n) ? null : n;
-    }
-
-    function normalizeStatus(raw) {
-      if (!raw) return 'potential';
-      const s = String(raw).toLowerCase().trim();
-      if (['working', 'работаю', 'work', 'да'].includes(s)) return 'working';
-      if (['not', 'не работаю', 'no', 'нет'].includes(s)) return 'not';
-      if (['potential', 'потенциал', 'возможно'].includes(s)) return 'potential';
-      return 'other';
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text || '';
-      return div.innerHTML;
-    }
-
-    function parseCSVLine(line) {
-      const result = [];
-      let current = '', inQuotes = false;
-      for (let char of line) {
-        if (char === '"') inQuotes = !inQuotes;
-        else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
-        else current += char;
-      }
-      result.push(current);
-      return result;
-    }
-
-    function loadFromSheet() {
-      document.getElementById('places-list').innerHTML = '<div class="loading">Загружаю...</div>';
-      fetch(SHEET_CSV + '&_=' + Date.now())
-        .then(r => r.text())
-        .then(text => {
-          const lines = text.trim().split(/\r?\n/);
-          const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-          places = [];
-          for (let i = 1; i < lines.length; i++) {
-            const vals = parseCSVLine(lines[i]);
-            const row = {};
-            headers.forEach((h, idx) => row[h] = (vals[idx] || '').trim());
-            const name = row['название заведения'] || row['название'] || '';
-            if (!name) continue;
-            places.push({
-              id: row['id'] || String(i),
-              name,
-              company: row['ооо'] || '',
-              manager: row['менеджер'] || '',
-              category: row['категория'] || row['category'] || '',
-              status: normalizeStatus(row['status'] || row['статус']),
-              phone: row['phone'] || '',
-              notes: row['notes'] || '',
-              lat: parseNum(row['lat'] || row['широта']),
-              lng: parseNum(row['lng'] || row['долгота']),
-              address: row['address'] || row['адрес'] || ''
-            });
-          }
-          refreshMarkers();
-          renderList();
-          updateStats();
-        })
-        .catch(() => {
-          document.getElementById('places-list').innerHTML = '<div class="loading">Ошибка загрузки</div>';
-        });
-    }
-
-    function updateStats() {
-      const filtered = getFiltered();
-      const total = filtered.length;
-      const withCoords = filtered.filter(p => p.lat && p.lng).length;
-      const w = filtered.filter(p => p.status === 'working').length;
-      const n = filtered.filter(p => p.status === 'not').length;
-      const p = filtered.filter(p => p.status === 'potential').length;
-      document.getElementById('stats').textContent = `Показано: ${total} · На карте: ${withCoords} · Работаю: ${w} · Не работаю: ${n} · Потенциал: ${p}`;
-    }
-
-    function getFiltered() {
-      return places.filter(p => {
-        const statusOk = currentFilter === 'all' || p.status === currentFilter;
-        const catOk = currentCat === 'all' || p.category.toLowerCase() === currentCat.toLowerCase();
-        return statusOk && catOk;
+    function loadFromSheet(){
+      fetch(SHEET_CSV+'&_='+Date.now()).then(r=>r.text()).then(text=>{
+        const lines=text.trim().split(/\r?\n/);
+        const headers=parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+        places=[];
+        for(let i=1;i<lines.length;i++){
+          const vals=parseCSVLine(lines[i]);
+          const row={};headers.forEach((h,idx)=>row[h]=(vals[idx]||'').trim());
+          const name=row['название заведения']||row['название']||'';
+          if(!name)continue;
+          places.push({
+            id:row['id']||String(i),name,
+            company:row['ооо']||'',manager:row['менеджер']||'',
+            category:row['категория']||row['category']||'',
+            status:normalizeStatus(row['status']||row['статус']),
+            lat:parseNum(row['lat']||row['широта']),
+            lng:parseNum(row['lng']||row['долгота']),
+            address:row['address']||row['адрес']||''
+          });
+        }
+        refreshMarkers();renderList();updateStats();
       });
     }
 
-    function renderList() {
-      const list = document.getElementById('places-list');
-      const filtered = getFiltered();
-      if (!filtered.length) {
-        list.innerHTML = '<div class="loading">Нет заведений</div>';
-        return;
-      }
-      list.innerHTML = filtered.map(p => `
+    function getFiltered(){return places.filter(p=>(currentFilter==='all'||p.status===currentFilter)&&(currentCat==='all'||p.category.toLowerCase()===currentCat.toLowerCase()))}
+    function updateStats(){const f=getFiltered();document.getElementById('stats').textContent=`Показано: ${f.length} · На карте: ${f.filter(p=>p.lat&&p.lng).length}`}
+    function renderList(){
+      const list=document.getElementById('places-list');
+      const f=getFiltered();
+      list.innerHTML=f.map(p=>`
         <div class="place-item" data-id="${p.id}">
           <div class="name"><span class="status-dot ${p.status}"></span>${escapeHtml(p.name)}</div>
-          <div class="meta">
-            ${p.category ? escapeHtml(p.category) + '<br>' : ''}
-            ${p.manager ? 'Менеджер: ' + escapeHtml(p.manager) + '<br>' : ''}
-            ${p.address ? escapeHtml(p.address) : ''}
-          </div>
-        </div>
-      `).join('');
-      list.querySelectorAll('.place-item').forEach(el => {
-        el.addEventListener('click', () => {
-          const place = places.find(x => x.id === el.dataset.id);
-          if (place && place.lat && place.lng) map.setView([place.lat, place.lng], 16);
+          <div class="meta">${p.category||''}${p.manager?' · '+escapeHtml(p.manager):''}<br>${p.address||''}</div>
+        </div>`).join('');
+      list.querySelectorAll('.place-item').forEach(el=>{
+        el.addEventListener('click',()=>{
+          currentPlace=places.find(x=>x.id===el.dataset.id);
+          if(currentPlace&&currentPlace.lat&&currentPlace.lng)map.setView([currentPlace.lat,currentPlace.lng],16);
+          document.getElementById('statusTitle').textContent=currentPlace.name;
+          document.getElementById('statusModal').classList.add('show');
         });
       });
     }
-
-    function refreshMarkers() {
-      Object.values(markers).forEach(m => map.removeLayer(m));
-      markers = {};
-      getFiltered().forEach(p => {
-        if (!p.lat || !p.lng) return;
-        const marker = L.marker([p.lat, p.lng], { icon: makeIcon(p.status) })
-          .addTo(map)
-          .bindPopup(`<b>${escapeHtml(p.name)}</b><br>${p.category || ''}<br>${p.status}<br>${escapeHtml(p.manager || '')}`);
-        markers[p.id] = marker;
+    function refreshMarkers(){
+      Object.values(markers).forEach(m=>map.removeLayer(m));markers={};
+      getFiltered().forEach(p=>{
+        if(!p.lat||!p.lng)return;
+        const m=L.marker([p.lat,p.lng],{icon:makeIcon(p.status)}).addTo(map)
+          .bindPopup(`<b>${escapeHtml(p.name)}</b><br>${p.category||''}<br>${p.status}`);
+        m.on('click',()=>{currentPlace=p;document.getElementById('statusTitle').textContent=p.name;document.getElementById('statusModal').classList.add('show')});
+        markers[p.id]=m;
       });
     }
 
-    document.getElementById('refreshBtn').addEventListener('click', loadFromSheet);
-    document.querySelectorAll('.filters .filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentFilter = btn.dataset.filter;
-        document.querySelectorAll('.filters .filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        refreshMarkers();
-        renderList();
-        updateStats();
-      });
+    async function geocode(address){
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Москва')}&limit=1`);
+        const d=await r.json();
+        if(d[0])return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+      }catch(e){}
+      return{lat:'',lng:''};
+    }
+
+    document.getElementById('addBtn').onclick=()=>document.getElementById('addModal').classList.add('show');
+    document.getElementById('cancelAdd').onclick=()=>document.getElementById('addModal').classList.remove('show');
+    document.getElementById('saveAdd').onclick=async()=>{
+      const name=document.getElementById('add-name').value.trim();
+      const address=document.getElementById('add-address').value.trim();
+      const manager=document.getElementById('add-manager').value.trim();
+      const category=document.getElementById('add-category').value;
+      if(!name)return alert('Введите название');
+      const coords=address?await geocode(address):{lat:'',lng:''};
+      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'add',name,address,manager,category,lat:coords.lat,lng:coords.lng})});
+      document.getElementById('addModal').classList.remove('show');
+      setTimeout(loadFromSheet,1500);
+    };
+
+    document.getElementById('cancelStatus').onclick=()=>document.getElementById('statusModal').classList.remove('show');
+    document.getElementById('saveStatus').onclick=async()=>{
+      if(!currentPlace)return;
+      const status=document.getElementById('new-status').value;
+      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'status',name:currentPlace.name,status})});
+      document.getElementById('statusModal').classList.remove('show');
+      setTimeout(loadFromSheet,1500);
+    };
+    document.getElementById('deleteBtn').onclick=async()=>{
+      if(!currentPlace)return;
+      if(!confirm(`Точно удалить «${currentPlace.name}»?`))return;
+      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'delete',name:currentPlace.name})});
+      document.getElementById('statusModal').classList.remove('show');
+      setTimeout(loadFromSheet,1500);
+    };
+
+    document.querySelectorAll('.filters .filter-btn').forEach(btn=>btn.onclick=()=>{
+      currentFilter=btn.dataset.filter;
+      document.querySelectorAll('.filters .filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');refreshMarkers();renderList();updateStats();
     });
-    document.querySelectorAll('#catFilters .filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        currentCat = btn.dataset.cat;
-        document.querySelectorAll('#catFilters .filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        refreshMarkers();
-        renderList();
-        updateStats();
-      });
+    document.querySelectorAll('#catFilters .filter-btn').forEach(btn=>btn.onclick=()=>{
+      currentCat=btn.dataset.cat;
+      document.querySelectorAll('#catFilters .filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');refreshMarkers();renderList();updateStats();
     });
-    document.getElementById('toggleSidebar').addEventListener('click', () => {
-      document.getElementById('sidebar').classList.toggle('open');
-    });
+    document.getElementById('toggleSidebar').onclick=()=>document.getElementById('sidebar').classList.toggle('open');
 
     loadFromSheet();
-    setInterval(loadFromSheet, 30000);
+    setInterval(loadFromSheet,30000);
   </script>
 </body>
 </html>
