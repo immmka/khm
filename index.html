@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Моя карта клиентов — Москва</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
   <style>
     :root { --bg:#0f172a; --panel:#1e293b; --border:#334155; --text:#f1f5f9; --muted:#94a3b8; --accent:#3b82f6; --green:#22c55e; --red:#ef4444; --yellow:#eab308; }
     *{box-sizing:border-box;margin:0;padding:0}
@@ -64,6 +66,12 @@
         <button class="filter-btn" data-cat="Клуб">Клуб</button>
         <button class="filter-btn" data-cat="Лаундж">Лаундж</button>
       </div>
+      <div class="filters">
+        <select id="managerFilter" style="padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted)">
+          <option value="all">Все менеджеры</option>
+        </select>
+        <button class="filter-btn" id="exportBtn">Экспорт CSV</button>
+      </div>
       <div class="stats" id="stats">Загрузка...</div>
       <div id="places-list"></div>
     </aside>
@@ -77,6 +85,8 @@
       <div class="form-group"><label>ООО / Фирма</label><input id="add-company"></div>
       <div class="form-group"><label>Адрес</label><input id="add-address" placeholder="ул. Пятницкая, 24"></div>
       <div class="form-group"><label>Менеджер</label><input id="add-manager"></div>
+      <div class="form-group"><label>Номер телефона</label><input id="add-phone" placeholder="+7..."></div>
+      <div class="form-group"><label>Заметки</label><textarea id="add-notes" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;color:#fff"></textarea></div>
       <div class="form-group">
         <label>Категория</label>
         <select id="add-category">
@@ -101,6 +111,9 @@
           <option value="potential">Потенциал</option>
         </select>
       </div>
+      <div class="form-group"><label>Менеджер</label><input id="edit-manager"></div>
+      <div class="form-group"><label>Телефон</label><input id="edit-phone"></div>
+      <div class="form-group"><label>Заметки</label><textarea id="edit-notes" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;color:#fff"></textarea></div>
       <div class="modal-actions">
         <button class="btn btn-secondary" id="cancelStatus">Отмена</button>
         <button class="btn" id="saveStatus">Сохранить</button>
@@ -110,6 +123,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script>
     const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTRotgX74WgwpLeW2F7KZkjxnhn2w5Jd5_IGKh_HRK3k0fVgmzn1zMRjXQirqMUWqUqSORxXY3ig63p/pub?gid=1877556216&single=true&output=csv';
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOQsUOyedD-u7szCUr6Z925mnYV4KKOLNq0rvN9IyO54DMz42VvpBw7KWZYKtO2jLk/exec';
@@ -124,7 +138,13 @@
     const shadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png';
     function makeIcon(s){return L.icon({iconUrl:iconUrls[s]||iconUrls.potential,shadowUrl,iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],shadowSize:[41,41]})}
 
-    let places=[], markers={}, currentFilter='all', currentCat='all', currentPlace=null;
+    let places=[], currentFilter='all', currentCat='all', currentManager='all', currentPlace=null;
+    const markerCluster = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false
+    });
+    map.addLayer(markerCluster);
     const map = L.map('map').setView([55.7558,37.6173],11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
 
@@ -151,10 +171,22 @@
           });
         });
         refreshMarkers();renderList();updateStats();
+        // Обновить список менеджеров
+        const managers=[...new Set(places.map(p=>p.manager).filter(Boolean))];
+        const sel=document.getElementById('managerFilter');
+        const cur=sel.value;
+        sel.innerHTML='<option value="all">Все менеджеры</option>'+managers.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+        sel.value=cur||'all';
       }).catch(e=>console.error(e));
     }
 
-    function getFiltered(){return places.filter(p=>(currentFilter==='all'||p.status===currentFilter)&&(currentCat==='all'||p.category.toLowerCase()===currentCat.toLowerCase()))}
+    function getFiltered(){
+      return places.filter(p=>
+        (currentFilter==='all'||p.status===currentFilter)&&
+        (currentCat==='all'||p.category.toLowerCase()===currentCat.toLowerCase())&&
+        (currentManager==='all'||(p.manager||'').toLowerCase()===currentManager.toLowerCase())
+      );
+    }
     function updateStats(){const f=getFiltered();document.getElementById('stats').textContent=`Показано: ${f.length} · На карте: ${f.filter(p=>p.lat&&p.lng).length}`}
     function renderList(){
       const list=document.getElementById('places-list');
@@ -174,13 +206,21 @@
       });
     }
     function refreshMarkers(){
-      Object.values(markers).forEach(m=>map.removeLayer(m));markers={};
+      markerCluster.clearLayers();
       getFiltered().forEach(p=>{
         if(!p.lat||!p.lng)return;
-        const m=L.marker([p.lat,p.lng],{icon:makeIcon(p.status)}).addTo(map)
-          .bindPopup(`<b>${escapeHtml(p.name)}</b><br>${p.category||''}<br>${p.status}`);
-        m.on('click',()=>{currentPlace=p;document.getElementById('statusTitle').textContent=p.name;document.getElementById('statusModal').classList.add('show')});
-        markers[p.id]=m;
+        const m=L.marker([p.lat,p.lng],{icon:makeIcon(p.status)})
+          .bindPopup(`<b>${escapeHtml(p.name)}</b><br>${p.category||''}<br>${p.status}<br>${p.phone||''}<br>${p.notes||''}`);
+        m.on('click',()=>{
+          currentPlace=p;
+          document.getElementById('statusTitle').textContent=p.name;
+          document.getElementById('new-status').value=p.status;
+          document.getElementById('edit-manager').value=p.manager||'';
+          document.getElementById('edit-phone').value=p.phone||'';
+          document.getElementById('edit-notes').value=p.notes||'';
+          document.getElementById('statusModal').classList.add('show');
+        });
+        markerCluster.addLayer(m);
       });
     }
 
@@ -195,13 +235,21 @@
 
     // Клик по карте — поставить точку
     let pendingMarker = null;
-    map.on('click', function(e) {
+    map.on('click', async function(e) {
       if (pendingMarker) map.removeLayer(pendingMarker);
       pendingMarker = L.marker(e.latlng, {draggable: true}).addTo(map);
-      document.getElementById('addModal').classList.add('show');
-      // Сохраняем координаты
-      document.getElementById('addModal').dataset.lat = e.latlng.lat;
-      document.getElementById('addModal').dataset.lng = e.latlng.lng;
+      const modal = document.getElementById('addModal');
+      modal.classList.add('show');
+      modal.dataset.lat = e.latlng.lat;
+      modal.dataset.lng = e.latlng.lng;
+      // Обратный геокодинг — подтянуть адрес
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&zoom=18&addressdetails=1`);
+        const d = await r.json();
+        if (d && d.display_name) {
+          document.getElementById('add-address').value = d.display_name;
+        }
+      } catch (err) {}
     });
     document.getElementById('cancelAdd').onclick=()=>{
       document.getElementById('addModal').classList.remove('show');
@@ -212,6 +260,8 @@
       const company=document.getElementById('add-company').value.trim();
       const address=document.getElementById('add-address').value.trim();
       const manager=document.getElementById('add-manager').value.trim();
+      const phone=document.getElementById('add-phone').value.trim();
+      const notes=document.getElementById('add-notes').value.trim();
       const category=document.getElementById('add-category').value;
       if(!name)return alert('Введите название');
       const modal=document.getElementById('addModal');
@@ -223,7 +273,7 @@
           lat=coords.lat;lng=coords.lng;
         }
       }
-      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'add',name,company,address,manager,category,lat,lng})});
+      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'add',name,company,address,manager,phone,notes,category,lat,lng})});
       document.getElementById('addModal').classList.remove('show');
       if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
       setTimeout(loadFromSheet,1500);
@@ -233,7 +283,10 @@
     document.getElementById('saveStatus').onclick=async()=>{
       if(!currentPlace)return;
       const status=document.getElementById('new-status').value;
-      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'status',name:currentPlace.name,status})});
+      const manager=document.getElementById('edit-manager').value.trim();
+      const phone=document.getElementById('edit-phone').value.trim();
+      const notes=document.getElementById('edit-notes').value.trim();
+      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'status',name:currentPlace.name,status,manager,phone,notes})});
       document.getElementById('statusModal').classList.remove('show');
       setTimeout(loadFromSheet,1500);
     };
@@ -255,7 +308,17 @@
       document.querySelectorAll('#catFilters .filter-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');refreshMarkers();renderList();updateStats();
     });
-    document.getElementById('toggleSidebar').onclick=()=>document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('managerFilter').onchange=()=>{
+      currentManager=document.getElementById('managerFilter').value;
+      refreshMarkers();renderList();updateStats();
+    };
+    document.getElementById('exportBtn').onclick=()=>{
+      const f=getFiltered();
+      const csv=['Название,ООО,Менеджер,Категория,Status,Телефон,Заметки,Адрес,lat,lng'];
+      f.forEach(p=>csv.push(`"${p.name}","${p.company||''}","${p.manager||''}","${p.category||''}","${p.status}","${p.phone||''}","${(p.notes||'').replace(/"/g,'""')}","${p.address||''}",${p.lat||''},${p.lng||''}`));
+      const blob=new Blob([csv.join('\n')],{type:'text/csv'});
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='places.csv';a.click();
+    };
 
     loadFromSheet();
     setInterval(loadFromSheet,30000);
