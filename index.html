@@ -74,6 +74,7 @@
     <div class="modal">
       <h2 style="margin-bottom:14px">Добавить заведение</h2>
       <div class="form-group"><label>Название</label><input id="add-name"></div>
+      <div class="form-group"><label>ООО / Фирма</label><input id="add-company"></div>
       <div class="form-group"><label>Адрес</label><input id="add-address" placeholder="ул. Пятницкая, 24"></div>
       <div class="form-group"><label>Менеджер</label><input id="add-manager"></div>
       <div class="form-group">
@@ -112,6 +113,8 @@
   <script>
     const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTRotgX74WgwpLeW2F7KZkjxnhn2w5Jd5_IGKh_HRK3k0fVgmzn1zMRjXQirqMUWqUqSORxXY3ig63p/pub?gid=1877556216&single=true&output=csv';
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOQsUOyedD-u7szCUr6Z925mnYV4KKOLNq0rvN9IyO54DMz42VvpBw7KWZYKtO2jLk/exec';
+    // Данные теперь загружаются из Apps Script (все листы)
+    const DATA_URL = SCRIPT_URL + '?action=list';
 
     const iconUrls = {
       working: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -131,27 +134,24 @@
     function parseCSVLine(line){const r=[];let c='',q=false;for(let ch of line){if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch}r.push(c);return r}
 
     function loadFromSheet(){
-      fetch(SHEET_CSV+'&_='+Date.now()).then(r=>r.text()).then(text=>{
-        const lines=text.trim().split(/\r?\n/);
-        const headers=parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+      fetch(DATA_URL+'&_='+Date.now()).then(r=>r.json()).then(data=>{
         places=[];
-        for(let i=1;i<lines.length;i++){
-          const vals=parseCSVLine(lines[i]);
-          const row={};headers.forEach((h,idx)=>row[h]=(vals[idx]||'').trim());
-          const name=row['название заведения']||row['название']||'';
-          if(!name)continue;
+        data.forEach((row,i)=>{
+          const name=String(row['Название заведения']||row['название']||row['Название']||'').trim();
+          if(!name)return;
           places.push({
             id:row['id']||String(i),name,
-            company:row['ооо']||'',manager:row['менеджер']||'',
-            category:row['категория']||row['category']||'',
-            status:normalizeStatus(row['status']||row['статус']),
+            company:row['ООО']||row['ооо']||'',
+            manager:row['Менеджер']||row['менеджер']||'',
+            category:row['Категория']||row['категория']||row['category']||'',
+            status:normalizeStatus(row['Status']||row['status']||row['статус']),
             lat:parseNum(row['lat']||row['широта']),
             lng:parseNum(row['lng']||row['долгота']),
-            address:row['address']||row['адрес']||''
+            address:row['address']||row['адрес']||row['Address']||''
           });
-        }
+        });
         refreshMarkers();renderList();updateStats();
-      });
+      }).catch(e=>console.error(e));
     }
 
     function getFiltered(){return places.filter(p=>(currentFilter==='all'||p.status===currentFilter)&&(currentCat==='all'||p.category.toLowerCase()===currentCat.toLowerCase()))}
@@ -193,17 +193,39 @@
       return{lat:'',lng:''};
     }
 
-    document.getElementById('addBtn').onclick=()=>document.getElementById('addModal').classList.add('show');
-    document.getElementById('cancelAdd').onclick=()=>document.getElementById('addModal').classList.remove('show');
+    // Клик по карте — поставить точку
+    let pendingMarker = null;
+    map.on('click', function(e) {
+      if (pendingMarker) map.removeLayer(pendingMarker);
+      pendingMarker = L.marker(e.latlng, {draggable: true}).addTo(map);
+      document.getElementById('addModal').classList.add('show');
+      // Сохраняем координаты
+      document.getElementById('addModal').dataset.lat = e.latlng.lat;
+      document.getElementById('addModal').dataset.lng = e.latlng.lng;
+    });
+    document.getElementById('cancelAdd').onclick=()=>{
+      document.getElementById('addModal').classList.remove('show');
+      if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
+    };
     document.getElementById('saveAdd').onclick=async()=>{
       const name=document.getElementById('add-name').value.trim();
+      const company=document.getElementById('add-company').value.trim();
       const address=document.getElementById('add-address').value.trim();
       const manager=document.getElementById('add-manager').value.trim();
       const category=document.getElementById('add-category').value;
       if(!name)return alert('Введите название');
-      const coords=address?await geocode(address):{lat:'',lng:''};
-      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'add',name,address,manager,category,lat:coords.lat,lng:coords.lng})});
+      const modal=document.getElementById('addModal');
+      let lat=modal.dataset.lat||'';
+      let lng=modal.dataset.lng||'';
+      if(!lat||!lng){
+        if(address){
+          const coords=await geocode(address);
+          lat=coords.lat;lng=coords.lng;
+        }
+      }
+      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'add',name,company,address,manager,category,lat,lng})});
       document.getElementById('addModal').classList.remove('show');
+      if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
       setTimeout(loadFromSheet,1500);
     };
 
