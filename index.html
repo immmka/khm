@@ -139,14 +139,14 @@
     function makeIcon(s){return L.icon({iconUrl:iconUrls[s]||iconUrls.potential,shadowUrl,iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],shadowSize:[41,41]})}
 
     let places=[], currentFilter='all', currentCat='all', currentManager='all', currentPlace=null;
+    const map = L.map('map').setView([55.7558,37.6173],11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
     const markerCluster = L.markerClusterGroup({
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,
       showCoverageOnHover: false
     });
     map.addLayer(markerCluster);
-    const map = L.map('map').setView([55.7558,37.6173],11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
 
     function parseNum(v){if(!v)return null;const n=parseFloat(String(v).replace(',','.').replace(/\s/g,''));return isNaN(n)?null:n}
     function normalizeStatus(r){if(!r)return'potential';const s=String(r).toLowerCase();if(['working','работаю','да'].includes(s))return'working';if(['not','не работаю','нет'].includes(s))return'not';return'potential'}
