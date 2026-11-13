@@ -320,8 +320,9 @@
       const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='places.csv';a.click();
     };
 
-    loadFromSheet();
-    setInterval(loadFromSheet,30000);
+    document.getElementById('toggleSidebar').onclick = () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    };
   </script>
 </body>
 </html>
