@@ -51,26 +51,31 @@
     <aside id="sidebar">
       <div class="sidebar-header">
         <h1>Моя карта</h1>
-        <button class="btn" id="addBtn">+ Добавить</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary" id="filtersBtn">Фильтры</button>
+          <button class="btn" id="addBtn">+ Добавить</button>
+        </div>
       </div>
-      <div class="filters">
-        <button class="filter-btn active" data-filter="all">Все</button>
-        <button class="filter-btn green" data-filter="working">Работаю</button>
-        <button class="filter-btn red" data-filter="not">Не работаю</button>
-        <button class="filter-btn yellow" data-filter="potential">Потенциал</button>
-      </div>
-      <div class="cat-filters" id="catFilters">
-        <button class="filter-btn active" data-cat="all">Все</button>
-        <button class="filter-btn" data-cat="Ресторан">Ресторан</button>
-        <button class="filter-btn" data-cat="Бар">Бар</button>
-        <button class="filter-btn" data-cat="Клуб">Клуб</button>
-        <button class="filter-btn" data-cat="Лаундж">Лаундж</button>
-      </div>
-      <div class="filters">
-        <select id="managerFilter" style="padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted)">
-          <option value="all">Все менеджеры</option>
-        </select>
-        <button class="filter-btn" id="exportBtn">Экспорт CSV</button>
+      <div id="filtersPanel" style="display:none;border-bottom:1px solid var(--border)">
+        <div class="filters">
+          <button class="filter-btn active" data-filter="all">Все</button>
+          <button class="filter-btn green" data-filter="working">Работаю</button>
+          <button class="filter-btn red" data-filter="not">Не работаю</button>
+          <button class="filter-btn yellow" data-filter="potential">Потенциал</button>
+        </div>
+        <div class="cat-filters" id="catFilters">
+          <button class="filter-btn active" data-cat="all">Все</button>
+          <button class="filter-btn" data-cat="Ресторан">Ресторан</button>
+          <button class="filter-btn" data-cat="Бар">Бар</button>
+          <button class="filter-btn" data-cat="Клуб">Клуб</button>
+          <button class="filter-btn" data-cat="Лаундж">Лаундж</button>
+        </div>
+        <div class="filters">
+          <select id="managerFilter" style="padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted)">
+            <option value="all">Все менеджеры</option>
+          </select>
+          <button class="filter-btn" id="exportBtn">Экспорт CSV</button>
+        </div>
       </div>
       <div class="stats" id="stats">Загрузка...</div>
       <div id="places-list"></div>
@@ -130,13 +135,26 @@
     // Данные теперь загружаются из Apps Script (все листы)
     const DATA_URL = SCRIPT_URL + '?action=list';
 
-    const iconUrls = {
-      working: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-      not: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-      potential: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png'
-    };
-    const shadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png';
-    function makeIcon(s){return L.icon({iconUrl:iconUrls[s]||iconUrls.potential,shadowUrl,iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],shadowSize:[41,41]})}
+    const managerColors = {};
+    const colorPalette = ['#3b82f6','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#a855f7','#0ea5e9','#d946ef','#84cc16'];
+    function getManagerColor(manager) {
+      if (!manager) return '#3b82f6';
+      if (!managerColors[manager]) {
+        const idx = Object.keys(managerColors).length % colorPalette.length;
+        managerColors[manager] = colorPalette[idx];
+      }
+      return managerColors[manager];
+    }
+    function makeIcon(status, manager) {
+      let color = iconUrls.potential;
+      if (status === 'working') {
+        // custom colored marker via CSS isn't easy with default icons, use blue as base and we'll rely on popup
+        color = iconUrls.working;
+      } else if (status === 'not') {
+        color = iconUrls.not;
+      }
+      return L.icon({iconUrl: color, shadowUrl, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41]});
+    }
 
     let places=[], currentFilter='all', currentCat='all', currentManager='all', currentPlace=null;
     const map = L.map('map').setView([55.7558,37.6173],11);
@@ -171,12 +189,22 @@
           });
         });
         refreshMarkers();renderList();updateStats();
-        // Обновить список менеджеров
+        // Обновить список менеджеров и легенду
         const managers=[...new Set(places.map(p=>p.manager).filter(Boolean))];
         const sel=document.getElementById('managerFilter');
         const cur=sel.value;
         sel.innerHTML='<option value="all">Все менеджеры</option>'+managers.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
         sel.value=cur||'all';
+        let legend = document.getElementById('managerLegend');
+        if (!legend) {
+          legend = document.createElement('div');
+          legend.id = 'managerLegend';
+          legend.style.cssText = 'padding:8px 16px;font-size:11px;color:var(--muted)';
+          document.getElementById('filtersPanel').appendChild(legend);
+        }
+        legend.innerHTML = '<b>Цвета менеджеров (работаю):</b><br>' + managers.map(m => 
+          `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${getManagerColor(m)};margin-right:4px"></span>${escapeHtml(m)}`
+        ).join(' &nbsp; ');
       }).catch(e=>console.error(e));
     }
 
@@ -209,8 +237,16 @@
       markerCluster.clearLayers();
       getFiltered().forEach(p=>{
         if(!p.lat||!p.lng)return;
-        const m=L.marker([p.lat,p.lng],{icon:makeIcon(p.status)})
-          .bindPopup(`<b>${escapeHtml(p.name)}</b><br>${p.category||''}<br>${p.status}<br>${p.phone||''}<br>${p.notes||''}`);
+        const icon = (p.status === 'working' && p.manager)
+          ? L.divIcon({
+              className: '',
+              html: `<div style="background:${getManagerColor(p.manager)};width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>`,
+              iconSize: [22,22],
+              iconAnchor: [11,11]
+            })
+          : makeIcon(p.status, p.manager);
+        const m = L.marker([p.lat, p.lng], {icon})
+          .bindPopup(`<b>${escapeHtml(p.name)}</b><br>${p.category||''}<br>${p.status}<br>Менеджер: ${escapeHtml(p.manager||'—')}<br>${p.phone||''}<br>${p.notes||''}`);
         m.on('click',()=>{
           currentPlace=p;
           document.getElementById('statusTitle').textContent=p.name;
@@ -320,6 +356,10 @@
       const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='places.csv';a.click();
     };
 
+    document.getElementById('filtersBtn').onclick = () => {
+      const p = document.getElementById('filtersPanel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    };
     document.getElementById('toggleSidebar').onclick = () => {
       document.getElementById('sidebar').classList.toggle('open');
     };
