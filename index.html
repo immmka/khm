@@ -32,7 +32,7 @@
     .status-dot.not{background:var(--red)}
     .status-dot.potential{background:var(--yellow)}
     .place-item .meta{font-size:12px;color:var(--muted);line-height:1.4}
-    #map{flex:1;height:100%}
+    #map{flex:1;height:100%;min-height:400px;background:#1e293b}
     .mobile-toggle{display:none;position:absolute;top:12px;left:12px;z-index:1001;background:var(--panel);border:1px solid var(--border);color:var(--text);width:42px;height:42px;border-radius:10px;font-size:18px}
     @media(max-width:768px){#sidebar{position:absolute;left:0;top:0;bottom:0;width:100%;max-width:360px;transform:translateX(-100%);transition:transform .25s}#sidebar.open{transform:translateX(0)}.mobile-toggle{display:flex;align-items:center;justify-content:center}}
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
@@ -96,6 +96,14 @@
         <label>Категория</label>
         <select id="add-category">
           <option>Ресторан</option><option>Бар</option><option>Клуб</option><option>Лаундж</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Статус</label>
+        <select id="add-status">
+          <option value="potential">Потенциал</option>
+          <option value="working">Работаю</option>
+          <option value="not">Не работаю</option>
         </select>
       </div>
       <div class="modal-actions">
@@ -183,42 +191,53 @@
     function parseCSVLine(line){const r=[];let c='',q=false;for(let ch of line){if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch}r.push(c);return r}
 
     function loadFromSheet(){
-      fetch(DATA_URL+'&_='+Date.now()).then(r=>r.json()).then(data=>{
-        places=[];
-        data.forEach((row,i)=>{
-          const name=String(row['Название заведения']||row['название']||row['Название']||'').trim();
-          if(!name)return;
-          places.push({
-            id:row['id']||String(i),name,
-            company:row['ООО']||row['ооо']||'',
-            manager:row['Менеджер']||row['менеджер']||'',
-            category:row['Категория']||row['категория']||row['category']||'',
-            status:normalizeStatus(row['Status']||row['status']||row['статус']),
-            lat:parseNum(row['lat']||row['широта']),
-            lng:parseNum(row['lng']||row['долгота']),
-            address:row['address']||row['адрес']||row['Address']||'',
-            phone:row['Phone']||row['phone']||row['телефон']||row['номер']||'',
-            notes:row['Notes']||row['notes']||row['заметки']||''
+      fetch(DATA_URL+'&_='+Date.now())
+        .then(r=>{
+          if(!r.ok) throw new Error('HTTP '+r.status);
+          return r.json();
+        })
+        .then(data=>{
+          if(!Array.isArray(data)) throw new Error('Not an array');
+          places=[];
+          data.forEach((row,i)=>{
+            const name=String(row['Название заведения']||row['название']||row['Название']||row['name']||'').trim();
+            if(!name)return;
+            const lat=parseNum(row['lat']||row['широта']||row['Lat']);
+            const lng=parseNum(row['lng']||row['долгота']||row['Lng']);
+            places.push({
+              id:row['id']||String(i),name,
+              company:row['ООО']||row['ооо']||'',
+              manager:row['Менеджер']||row['менеджер']||'',
+              category:row['Категория']||row['категория']||row['category']||'',
+              status:normalizeStatus(row['Status']||row['status']||row['статус']),
+              lat,lng,
+              address:row['address']||row['адрес']||row['Address']||row['Адрес']||'',
+              phone:row['Phone']||row['phone']||row['телефон']||row['номер']||'',
+              notes:row['Notes']||row['notes']||row['заметки']||''
+            });
           });
+          refreshMarkers();renderList();updateStats();
+          // Обновить список менеджеров и легенду
+          const managers=[...new Set(places.map(p=>p.manager).filter(Boolean))];
+          const sel=document.getElementById('managerFilter');
+          const cur=sel.value;
+          sel.innerHTML='<option value="all">Все менеджеры</option>'+managers.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+          sel.value=cur||'all';
+          let legend = document.getElementById('managerLegend');
+          if (!legend) {
+            legend = document.createElement('div');
+            legend.id = 'managerLegend';
+            legend.style.cssText = 'padding:8px 16px;font-size:11px;color:var(--muted)';
+            document.getElementById('filtersPanel').appendChild(legend);
+          }
+          legend.innerHTML = '<b>Цвета менеджеров (работаю):</b><br>' + managers.map(m => 
+            `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${getManagerColor(m)};margin-right:4px"></span>${escapeHtml(m)}`
+          ).join(' &nbsp; ');
+        })
+        .catch(e=>{
+          console.error('Load error:', e);
+          document.getElementById('stats').textContent = 'Ошибка загрузки данных. Проверьте Apps Script.';
         });
-        refreshMarkers();renderList();updateStats();
-        // Обновить список менеджеров и легенду
-        const managers=[...new Set(places.map(p=>p.manager).filter(Boolean))];
-        const sel=document.getElementById('managerFilter');
-        const cur=sel.value;
-        sel.innerHTML='<option value="all">Все менеджеры</option>'+managers.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-        sel.value=cur||'all';
-        let legend = document.getElementById('managerLegend');
-        if (!legend) {
-          legend = document.createElement('div');
-          legend.id = 'managerLegend';
-          legend.style.cssText = 'padding:8px 16px;font-size:11px;color:var(--muted)';
-          document.getElementById('filtersPanel').appendChild(legend);
-        }
-        legend.innerHTML = '<b>Цвета менеджеров (работаю):</b><br>' + managers.map(m => 
-          `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${getManagerColor(m)};margin-right:4px"></span>${escapeHtml(m)}`
-        ).join(' &nbsp; ');
-      }).catch(e=>console.error(e));
     }
 
     function getFiltered(){
@@ -258,8 +277,10 @@
               iconAnchor: [11,11]
             })
           : makeIcon(p.status, p.manager);
+        const popupHtml = `<b>${escapeHtml(p.name)}</b><br>${p.category||''}<br>Статус: ${p.status}<br>Менеджер: ${escapeHtml(p.manager||'—')}<br>${p.phone||''}<br>${p.notes||''}`;
         const m = L.marker([p.lat, p.lng], {icon})
-          .bindPopup(`<b>${escapeHtml(p.name)}</b><br>${p.category||''}<br>${p.status}<br>Менеджер: ${escapeHtml(p.manager||'—')}<br>${p.phone||''}<br>${p.notes||''}`);
+          .bindTooltip(popupHtml, {direction: 'top', offset: [0, -10], opacity: 0.95})
+          .bindPopup(popupHtml);
         m.on('click',()=>{
           currentPlace=p;
           document.getElementById('statusTitle').textContent=p.name;
@@ -312,6 +333,7 @@
       const phone=document.getElementById('add-phone').value.trim();
       const notes=document.getElementById('add-notes').value.trim();
       const category=document.getElementById('add-category').value;
+      const status=document.getElementById('add-status').value;
       if(!name)return alert('Введите название');
       const modal=document.getElementById('addModal');
       let lat=modal.dataset.lat||'';
@@ -322,7 +344,7 @@
           lat=coords.lat;lng=coords.lng;
         }
       }
-      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'add',name,company,address,manager,phone,notes,category,lat,lng})});
+      await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'add',name,company,address,manager,phone,notes,category,status,lat,lng})});
       document.getElementById('addModal').classList.remove('show');
       if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
       setTimeout(loadFromSheet,1500);
