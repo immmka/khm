@@ -10,7 +10,9 @@
   <style>
     :root { --bg:#0f172a; --panel:#1e293b; --border:#334155; --text:#f1f5f9; --muted:#94a3b8; --accent:#3b82f6; --green:#22c55e; --red:#ef4444; --yellow:#eab308; }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+    body.light { --bg:#f8fafc; --panel:#ffffff; --border:#e2e8f0; --text:#0f172a; --muted:#64748b; }
+    body.sepia { --bg:#1c1917; --panel:#292524; --border:#44403c; --text:#fafaf9; --muted:#a8a29e; --accent:#d97706; }
+    body.dim { --bg:#0c1222; --panel:#1a2332; --border:#2d3a4f; --text:#e2e8f0; --muted:#94a3b8; }
     #app{display:flex;height:100vh}
     #sidebar{width:380px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:1000;position:absolute;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .25s}
     #sidebar.open{transform:translateX(0)}
@@ -32,6 +34,7 @@
     .status-dot.working{background:var(--green)}
     .status-dot.not{background:var(--red)}
     .status-dot.potential{background:var(--yellow)}
+    .status-dot.unknown{background:#9ca3af}
     .place-item .meta{font-size:12px;color:var(--muted);line-height:1.4}
     #map{flex:1;height:100%;min-height:400px;background:#1e293b}
     .mobile-toggle{display:flex;align-items:center;justify-content:center;position:absolute;top:12px;left:12px;z-index:1001;background:var(--panel);border:1px solid var(--border);color:var(--text);width:42px;height:42px;border-radius:10px;font-size:18px}
@@ -62,6 +65,7 @@
           <button class="filter-btn green" data-filter="working">Работаю</button>
           <button class="filter-btn red" data-filter="not">Не работаю</button>
           <button class="filter-btn yellow" data-filter="potential">Потенциал</button>
+          <button class="filter-btn" data-filter="unknown" style="background:#9ca3af;color:#fff">Неизвестно</button>
         </div>
         <div class="cat-filters" id="catFilters">
           <button class="filter-btn active" data-cat="all">Все</button>
@@ -71,11 +75,21 @@
           <button class="filter-btn" data-cat="Лаундж">Лаундж</button>
         </div>
         <div class="filters">
-          <input id="searchInput" placeholder="Поиск по названию..." style="flex:1;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);min-width:140px">
+          <input id="searchInput" placeholder="Поиск по названию или адресу..." style="flex:1;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text);min-width:140px">
           <select id="managerFilter" style="padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted)">
             <option value="all">Все менеджеры</option>
           </select>
+        </div>
+        <div class="filters">
+          <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="filterPhone"> Только с телефоном</label>
+          <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="filterNotes"> Только с заметками</label>
+          <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="filterOld"> Не обновлялись 30+ дней</label>
+          <label style="font-size:12px;color:var(--muted)"><input type="checkbox" id="toggleCluster" checked> Кластеры</label>
+        </div>
+        <div class="filters">
           <button class="filter-btn" id="exportBtn">Экспорт CSV</button>
+          <button class="filter-btn" id="exportKmlBtn">Экспорт KML</button>
+          <button class="filter-btn" id="themeBtn">Тема</button>
         </div>
       </div>
       <div class="stats" id="stats">Загрузка...</div>
@@ -90,7 +104,19 @@
       <div class="form-group"><label>Название</label><input id="add-name"></div>
       <div class="form-group"><label>ООО / Фирма</label><input id="add-company"></div>
       <div class="form-group"><label>Адрес</label><input id="add-address" placeholder="ул. Пятницкая, 24"></div>
-      <div class="form-group"><label>Менеджер</label><input id="add-manager"></div>
+      <div class="form-group">
+        <label>Менеджер</label>
+        <select id="add-manager">
+          <option value="">— не выбран —</option>
+          <option>Дима б</option>
+          <option>Лера</option>
+          <option>Алина</option>
+          <option>Дима ч</option>
+          <option>Антон</option>
+          <option>Артур</option>
+          <option>Александр</option>
+        </select>
+      </div>
       <div class="form-group"><label>Номер телефона</label><input id="add-phone" placeholder="+7..."></div>
       <div class="form-group"><label>Заметки</label><textarea id="add-notes" rows="2" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;color:#fff"></textarea></div>
       <div class="form-group">
@@ -102,9 +128,8 @@
       <div class="form-group">
         <label>Статус</label>
         <select id="add-status">
+          <option value="unknown">Неизвестно</option>
           <option value="potential">Потенциал</option>
-          <option value="working">Работаю</option>
-          <option value="not">Не работаю</option>
         </select>
       </div>
       <div class="modal-actions">
@@ -123,6 +148,7 @@
           <option value="working">Работаю</option>
           <option value="not">Не работаю</option>
           <option value="potential">Потенциал</option>
+          <option value="unknown">Неизвестно</option>
         </select>
       </div>
       <div class="form-group"><label>Менеджер</label><input id="edit-manager"></div>
@@ -155,8 +181,10 @@
     };
     const shadowUrl = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png';
 
+    const MANAGERS = ['Дима б', 'Лера', 'Алина', 'Дима ч', 'Антон', 'Артур', 'Александр'];
     const managerColors = {};
     const colorPalette = ['#3b82f6','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#a855f7','#0ea5e9','#d946ef','#84cc16'];
+    MANAGERS.forEach((m, i) => { managerColors[m] = colorPalette[i % colorPalette.length]; });
     function getManagerColor(manager) {
       if (!manager) return '#3b82f6';
       if (!managerColors[manager]) {
@@ -176,9 +204,13 @@
       return L.icon({iconUrl: color, shadowUrl, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41]});
     }
 
-    let places=[], currentFilter='all', currentCat='all', currentManager='all', currentSearch='', currentPlace=null;
+    let places=[], currentFilter='all', currentCat='all', currentManager='all', currentSearch='', 
+        filterPhone=false, filterNotes=false, filterOld=false, clustersOn=true, currentPlace=null;
     const map = L.map('map').setView([55.7558,37.6173],11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+    L.tileLayer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
+      maxZoom: 19,
+      attribution: '© Яндекс'
+    }).addTo(map);
     const markerCluster = L.markerClusterGroup({
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,
@@ -243,12 +275,20 @@
 
     function getFiltered(){
       const q = currentSearch.toLowerCase();
-      return places.filter(p=>
-        (currentFilter==='all'||p.status===currentFilter)&&
-        (currentCat==='all'||p.category.toLowerCase()===currentCat.toLowerCase())&&
-        (currentManager==='all'||(p.manager||'').toLowerCase()===currentManager.toLowerCase())&&
-        (!q || p.name.toLowerCase().includes(q) || (p.address||'').toLowerCase().includes(q))
-      );
+      const now = Date.now();
+      return places.filter(p=>{
+        if (currentFilter!=='all' && p.status!==currentFilter) return false;
+        if (currentCat!=='all' && p.category.toLowerCase()!==currentCat.toLowerCase()) return false;
+        if (currentManager!=='all' && (p.manager||'').toLowerCase()!==currentManager.toLowerCase()) return false;
+        if (q && !p.name.toLowerCase().includes(q) && !(p.address||'').toLowerCase().includes(q)) return false;
+        if (filterPhone && !p.phone) return false;
+        if (filterNotes && !p.notes) return false;
+        if (filterOld && p.update) {
+          const d = new Date(p.update).getTime();
+          if (now - d < 30*24*60*60*1000) return false;
+        }
+        return true;
+      });
     }
     function updateStats(){const f=getFiltered();document.getElementById('stats').textContent=`Показано: ${f.length} · На карте: ${f.filter(p=>p.lat&&p.lng).length}`}
     function renderList(){
@@ -285,8 +325,27 @@
               iconSize: [22,22],
               iconAnchor: [11,11]
             })
-          : makeIcon(p.status, p.manager);
-        const popupHtml = `<b>${escapeHtml(p.name)}</b><br>${p.category||''}<br>Статус: ${p.status}<br>Менеджер: ${escapeHtml(p.manager||'—')}<br>${p.phone||''}<br>${p.notes||''}`;
+          : L.divIcon({
+              className: '',
+              html: `<div style="background:${p.status==='not'?'#ef4444':p.status==='unknown'?'#9ca3af':'#eab308'};width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
+              iconSize: [18,18],
+              iconAnchor: [9,9]
+            });
+        const yandexLink = `https://yandex.ru/maps/?ll=${p.lng},${p.lat}&z=17&pt=${p.lng},${p.lat}`;
+        const popupHtml = `
+          <b>${escapeHtml(p.name)}</b><br>
+          ${p.category||''}<br>
+          Статус: <b>${p.status}</b><br>
+          Менеджер: ${escapeHtml(p.manager||'—')}<br>
+          ${p.phone||''}<br>
+          ${p.notes||''}<br>
+          <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+            <button onclick="quickStatus('${escapeHtml(p.name)}','working')" style="padding:4px 8px;font-size:11px;background:#22c55e;color:#fff;border:none;border-radius:4px">Работаю</button>
+            <button onclick="quickStatus('${escapeHtml(p.name)}','not')" style="padding:4px 8px;font-size:11px;background:#ef4444;color:#fff;border:none;border-radius:4px">Не работаю</button>
+            <button onclick="quickStatus('${escapeHtml(p.name)}','unknown')" style="padding:4px 8px;font-size:11px;background:#9ca3af;color:#fff;border:none;border-radius:4px">Неизвестно</button>
+          </div>
+          <a href="${yandexLink}" target="_blank" style="display:inline-block;margin-top:6px;font-size:12px">Открыть в Яндекс Картах</a>
+        `;
         const m = L.marker([p.lat, p.lng], {icon})
           .bindTooltip(popupHtml, {direction: 'top', offset: [0, -10], opacity: 0.95})
           .bindPopup(popupHtml);
@@ -305,11 +364,23 @@
 
     async function geocode(address){
       try{
-        const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Москва')}&limit=1`);
-        const d=await r.json();
-        if(d[0])return{lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};
+        // Яндекс Геокодер (нужен ключ — замени YOUR_YANDEX_KEY)
+        const key = 'YOUR_YANDEX_KEY';
+        if (key && key !== 'YOUR_YANDEX_KEY') {
+          const r = await fetch(`https://geocode-maps.yandex.ru/1.x/?apikey=${key}&format=json&geocode=${encodeURIComponent(address + ', Москва')}`);
+          const d = await r.json();
+          const pos = d.response.GeoObjectCollection.featureMember[0]?.GeoObject.Point.pos;
+          if (pos) {
+            const [lng, lat] = pos.split(' ').map(Number);
+            return {lat, lng};
+          }
+        }
+        // Fallback на Nominatim
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address+', Москва')}&limit=1`);
+        const d = await r.json();
+        if(d[0]) return {lat:parseFloat(d[0].lat), lng:parseFloat(d[0].lon)};
       }catch(e){}
-      return{lat:'',lng:''};
+      return {lat:'', lng:''};
     }
 
     // Клик по карте — поставить точку
@@ -323,11 +394,19 @@
       modal.dataset.lng = e.latlng.lng;
       // Обратный геокодинг — подтянуть адрес
       try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&zoom=18&addressdetails=1`);
-        const d = await r.json();
-        if (d && d.display_name) {
-          document.getElementById('add-address').value = d.display_name;
+        const key = 'YOUR_YANDEX_KEY';
+        let addr = '';
+        if (key && key !== 'YOUR_YANDEX_KEY') {
+          const r = await fetch(`https://geocode-maps.yandex.ru/1.x/?apikey=${key}&format=json&geocode=${e.latlng.lng},${e.latlng.lat}`);
+          const d = await r.json();
+          addr = d.response.GeoObjectCollection.featureMember[0]?.GeoObject.metaDataProperty.GeocoderMetaData.text || '';
         }
+        if (!addr) {
+          const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}&zoom=18&addressdetails=1`);
+          const d = await r.json();
+          addr = d.display_name || '';
+        }
+        if (addr) document.getElementById('add-address').value = addr;
       } catch (err) {}
     });
     document.getElementById('cancelAdd').onclick=()=>{
@@ -362,6 +441,20 @@
       if(pendingMarker){map.removeLayer(pendingMarker);pendingMarker=null;}
       setTimeout(loadFromSheet,1500);
     };
+
+    async function quickStatus(name, status) {
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: {'Content-Type': 'text/plain;charset=utf-8'},
+          body: JSON.stringify({action: 'status', name, status})
+        });
+        map.closePopup();
+        setTimeout(loadFromSheet, 800);
+      } catch (e) {
+        alert('Не удалось сменить статус');
+      }
+    }
 
     document.getElementById('cancelStatus').onclick=()=>document.getElementById('statusModal').classList.remove('show');
     document.getElementById('saveStatus').onclick=async()=>{
@@ -420,6 +513,29 @@
       document.querySelectorAll('#catFilters .filter-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');refreshMarkers();renderList();updateStats();
     });
+    document.getElementById('filterPhone').onchange = e => { filterPhone = e.target.checked; refreshMarkers(); renderList(); updateStats(); };
+    document.getElementById('filterNotes').onchange = e => { filterNotes = e.target.checked; refreshMarkers(); renderList(); updateStats(); };
+    document.getElementById('filterOld').onchange = e => { filterOld = e.target.checked; refreshMarkers(); renderList(); updateStats(); };
+    document.getElementById('toggleCluster').onchange = e => {
+      clustersOn = e.target.checked;
+      if (clustersOn) map.addLayer(markerCluster);
+      else map.removeLayer(markerCluster);
+      refreshMarkers();
+    };
+    document.getElementById('themeBtn').onclick = () => {
+      const body = document.body;
+      if (body.classList.contains('light')) {
+        body.classList.remove('light');
+        body.classList.add('sepia');
+      } else if (body.classList.contains('sepia')) {
+        body.classList.remove('sepia');
+        body.classList.add('dim');
+      } else if (body.classList.contains('dim')) {
+        body.classList.remove('dim');
+      } else {
+        body.classList.add('light');
+      }
+    };
     document.getElementById('searchInput').oninput = () => {
       currentSearch = document.getElementById('searchInput').value.trim();
       refreshMarkers();renderList();updateStats();
@@ -427,6 +543,28 @@
     document.getElementById('managerFilter').onchange=()=>{
       currentManager=document.getElementById('managerFilter').value;
       refreshMarkers();renderList();updateStats();
+    };
+    document.getElementById('exportKmlBtn').onclick = () => {
+      const f = getFiltered();
+      let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<name>Моя карта</name>`;
+      f.forEach(p => {
+        if (!p.lat || !p.lng) return;
+        kml += `
+<Placemark>
+  <name>${escapeHtml(p.name)}</name>
+  <description>${escapeHtml(p.category||'')} | ${p.status} | ${escapeHtml(p.manager||'')}</description>
+  <Point><coordinates>${p.lng},${p.lat},0</coordinates></Point>
+</Placemark>`;
+      });
+      kml += `</Document></kml>`;
+      const blob = new Blob([kml], {type: 'application/vnd.google-earth.kml+xml'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'karta.kml';
+      a.click();
     };
     document.getElementById('exportBtn').onclick=()=>{
       const f=getFiltered();
