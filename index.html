@@ -207,9 +207,9 @@
     let places=[], currentFilter='all', currentCat='all', currentManager='all', currentSearch='', 
         filterPhone=false, filterNotes=false, filterOld=false, clustersOn=true, currentPlace=null;
     const map = L.map('map').setView([55.7558,37.6173],11);
-    L.tileLayer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '© Яндекс'
+      attribution: '&copy; OpenStreetMap'
     }).addTo(map);
     const markerCluster = L.markerClusterGroup({
       maxClusterRadius: 50,
@@ -219,7 +219,15 @@
     map.addLayer(markerCluster);
 
     function parseNum(v){if(!v)return null;const n=parseFloat(String(v).replace(',','.').replace(/\s/g,''));return isNaN(n)?null:n}
-    function normalizeStatus(r){if(!r)return'potential';const s=String(r).toLowerCase();if(['working','работаю','да'].includes(s))return'working';if(['not','не работаю','нет'].includes(s))return'not';return'potential'}
+    function normalizeStatus(r){
+      if(!r)return'unknown';
+      const s=String(r).toLowerCase();
+      if(['working','работаю','да'].includes(s))return'working';
+      if(['not','не работаю','нет'].includes(s))return'not';
+      if(['potential','потенциал'].includes(s))return'potential';
+      if(['unknown','неизвестно','не известно'].includes(s))return'unknown';
+      return'unknown';
+    }
     function escapeHtml(t){const d=document.createElement('div');d.textContent=t||'';return d.innerHTML}
     function parseCSVLine(line){const r=[];let c='',q=false;for(let ch of line){if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c='';}else c+=ch}r.push(c);return r}
 
@@ -327,11 +335,13 @@
             })
           : L.divIcon({
               className: '',
-              html: `<div style="background:${p.status==='not'?'#ef4444':p.status==='unknown'?'#9ca3af':'#eab308'};width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
+              html: `<div style="background:${p.status==='not'?'#ef4444':p.status==='potential'?'#eab308':'#9ca3af'};width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`,
               iconSize: [18,18],
               iconAnchor: [9,9]
             });
-        const yandexLink = `https://yandex.ru/maps/?ll=${p.lng},${p.lat}&z=17&pt=${p.lng},${p.lat}`;
+        const yandexRoute = `https://yandex.ru/maps/?rtext=~${p.lat},${p.lng}&rtt=auto`;
+        const callBtn = p.phone ? `<a href="tel:${p.phone}" style="display:inline-block;margin:4px 4px 0 0;padding:4px 10px;background:#22c55e;color:#fff;border-radius:4px;text-decoration:none;font-size:12px">📞 Позвонить</a>` : '';
+        const routeBtn = `<a href="${yandexRoute}" target="_blank" style="display:inline-block;margin:4px 4px 0 0;padding:4px 10px;background:#3b82f6;color:#fff;border-radius:4px;text-decoration:none;font-size:12px">🗺 Маршрут</a>`;
         const popupHtml = `
           <b>${escapeHtml(p.name)}</b><br>
           ${p.category||''}<br>
@@ -342,9 +352,10 @@
           <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
             <button onclick="quickStatus('${escapeHtml(p.name)}','working')" style="padding:4px 8px;font-size:11px;background:#22c55e;color:#fff;border:none;border-radius:4px">Работаю</button>
             <button onclick="quickStatus('${escapeHtml(p.name)}','not')" style="padding:4px 8px;font-size:11px;background:#ef4444;color:#fff;border:none;border-radius:4px">Не работаю</button>
+            <button onclick="quickStatus('${escapeHtml(p.name)}','potential')" style="padding:4px 8px;font-size:11px;background:#eab308;color:#000;border:none;border-radius:4px">Потенциал</button>
             <button onclick="quickStatus('${escapeHtml(p.name)}','unknown')" style="padding:4px 8px;font-size:11px;background:#9ca3af;color:#fff;border:none;border-radius:4px">Неизвестно</button>
           </div>
-          <a href="${yandexLink}" target="_blank" style="display:inline-block;margin-top:6px;font-size:12px">Открыть в Яндекс Картах</a>
+          <div style="margin-top:6px">${callBtn}${routeBtn}</div>
         `;
         const m = L.marker([p.lat, p.lng], {icon})
           .bindTooltip(popupHtml, {direction: 'top', offset: [0, -10], opacity: 0.95})
