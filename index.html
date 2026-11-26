@@ -204,6 +204,8 @@
             </div>
         </div>
     </div>
+    
+    <div class="modal-overlay" id="edit-modal">
         <div class="modal">
             <h3>Редактировать заведение</h3>
             <input type="hidden" id="edit-row-index">
@@ -324,29 +326,35 @@
                 
                 marker.on('click', function(e) {
                     L.DomEvent.stopPropagation(e);
-                    const name = r['Название заведения'] || r['название'] || '—';
-                    const phone = r['phone'] || r['Phone'] || r['Телефон'] || '';
-                    const manager = r['Менеджер'] || r['менеджер'] || '';
-                    const addr = r['address'] || r['Адрес'] || '';
-                    const shortAddr = addr.split(',').slice(0, 2).join(', ').trim();
-                    const yandexUrl = `https://yandex.ru/maps/?text=${encodeURIComponent(name + ', ' + addr)}`;
-                    const html = `
-                        <div style="padding:10px;min-width:180px">
-                            <div style="font-weight:600;font-size:14px">${escapeHtml(name)}</div>
-                            <div style="font-size:11px;color:#666;margin-top:2px">${statusLabel(status)}</div>
-                            ${manager ? `<div style="font-size:12px;margin-top:2px">👤 ${escapeHtml(manager)}</div>` : ''}
-                            ${shortAddr ? `<div style="font-size:11px;color:#888;margin-top:2px">📍 ${escapeHtml(shortAddr)}</div>` : ''}
-                            <div style="margin-top:8px;display:flex;gap:4px">
-                                ${phone ? `<a href="tel:${phone}" style="padding:6px 10px;background:#4caf50;color:#fff;border-radius:4px;text-decoration:none">📞</a>` : ''}
-                                <a href="${yandexUrl}" target="_blank" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:4px;text-decoration:none;font-size:12px">Яндекс</a>
-                            </div>
-                        </div>
-                    `;
-                    L.popup({ maxWidth: 240 }).setLatLng([lat, lng]).setContent(html).openOn(map);
+                    openDetailPopupForRecord(r);
                 });
                 
                 markers.push(marker);
             });
+        }
+        
+        window.showFullByCoords = function(lat, lng) {
+            const r = allRecords.find(x => {
+                const rLat = parseFloat(x['lat'] || x['Широта'] || 0);
+                const rLng = parseFloat(x['lng'] || x['Долгота'] || 0);
+                return Math.abs(rLat - lat) < 0.0001 && Math.abs(rLng - lng) < 0.0001;
+            });
+            if (r) {
+                map.closePopup();
+                setTimeout(() => openDetailPopupForRecord(r), 100);
+            }
+        };
+        
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('more-btn')) {
+                const name = e.target.dataset.name;
+                openFullCard(name);
+            }
+        });
+        
+        function openFullCard(name) {
+            const r = allRecords.find(x => (x['Название заведения'] || x['название']) === name);
+            if (r) openDetailPopupForRecord(r);
         }
         
         function getNextStatusLabel(current) {
@@ -357,6 +365,7 @@
         }
         
         function openDetailPopupForRecord(r) {
+            window._currentRecord = r;
             const name = r['Название заведения'] || r['название'] || '—';
             const status = normalizeStatus(r['Status'] || r['status']);
             const address = r['address'] || r['Адрес'] || r['адрес'] || '—';
@@ -366,7 +375,10 @@
             const category = r['Категория'] || r['category'] || '—';
             const updated = r['update'] || r['Update'] || '—';
             
-            const yandexUrl = `https://yandex.ru/maps/?pt=${lng},${lat}&z=17&l=map`;
+            const cleanName2 = name.replace(/,?\s*\d{4}-\d{2}-\d{2}.*$/, '').trim();
+            const cleanAddr2 = (address || '').replace(/\d{4}-\d{2}-\d{2}.*/, '').split(',').slice(0, 2).join(',').trim();
+            const searchQ = cleanAddr2 && cleanAddr2 !== '—' ? `${cleanName2}, ${cleanAddr2}` : cleanName2;
+            const yandexUrl = `https://yandex.ru/maps/?text=${encodeURIComponent(searchQ)}`;
             const html = `
                 <div class="detail-popup">
                     <div class="header">${escapeHtml(name)}</div>
@@ -379,7 +391,7 @@
                     <div class="actions">
                         <a href="${yandexUrl}" target="_blank" style="padding:5px 10px;font-size:12px;background:#3b82f6;color:white;border-radius:4px;text-decoration:none">🗺 Яндекс</a>
                         ${phone && phone !== '—' ? `<a href="tel:${phone}" style="padding:5px 10px;font-size:12px;background:#4caf50;color:white;border-radius:4px;text-decoration:none">📞 Позвонить</a>` : ''}
-                        <button onclick="openEditModalForRecord(this)">✏️ Изменить</button>
+                        <button onclick="event.preventDefault(); event.stopPropagation(); window.editCurrentRecord()" style="padding:5px 10px;font-size:12px;background:#64748b;color:white;border:none;border-radius:4px;cursor:pointer">✏️ Изменить</button>
                     </div>
                 </div>
             `;
@@ -432,12 +444,28 @@
             if (marker) openEditModalForRecordInternal(marker._record);
         }
         
-        function openEditModalForRecord(btn) {
+        window.editCurrentRecord = function() {
+            if (!window._currentRecord) return;
+            const r = window._currentRecord;
+            document.getElementById('edit-name').value = r['Название заведения'] || r['название'] || '';
+            document.getElementById('edit-address').value = r['address'] || r['Адрес'] || '';
+            document.getElementById('edit-manager').value = r['Менеджер'] || r['менеджер'] || '';
+            document.getElementById('edit-category').value = r['Категория'] || r['category'] || 'Бар';
+            document.getElementById('edit-status').value = normalizeStatus(r['Status'] || r['status']);
+            document.getElementById('edit-phone').value = r['phone'] || r['Phone'] || '';
+            document.getElementById('edit-notes').value = r['notes'] || r['Notes'] || '';
+            document.getElementById('edit-modal').classList.add('active');
+        };
+        
+        window.openEditModalForRecord = function(btn) {
             const popup = btn.closest('.leaflet-popup');
-            const header = popup.querySelector('.header').textContent;
-            const record = allRecords.find(r => (r['Название заведения'] || r['название']) === header);
+            if (!popup) return;
+            const header = popup.querySelector('.header');
+            if (!header) return;
+            const name = header.textContent;
+            const record = allRecords.find(r => (r['Название заведения'] || r['название']) === name);
             if (record) openEditModalForRecordInternal(record);
-        }
+        };
         
         function openEditModalForRecordInternal(r) {
             document.getElementById('edit-name').value = r['Название заведения'] || r['название'] || '';
