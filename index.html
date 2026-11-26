@@ -58,6 +58,12 @@
             background: #1e293b; color: white; font-size: 20px; cursor: pointer;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
+        .locate-btn {
+            position: absolute; bottom: 20px; right: 10px; z-index: 1001;
+            width: 44px; height: 44px; border-radius: 50%; border: none;
+            background: #3b82f6; color: white; font-size: 20px; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
         
         .hover-popup {
             background: white; padding: 8px 10px; border-radius: 6px;
@@ -116,11 +122,22 @@
             .detail-popup { max-width: 90vw; }
             .modal { width: 95%; padding: 16px; }
         }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar { width: 280px; }
+            .sidebar.open { box-shadow: 4px 0 20px rgba(0,0,0,0.4); }
+            .list-item { padding: 12px; }
+            .toggle-btn { width: 44px; height: 44px; }
+        }
+        @media (min-width: 1025px) {
+            .sidebar { width: 340px; }
+            .sidebar.open ~ #map { margin-left: 0; }
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <button class="toggle-btn" id="toggleSidebar">☰</button>
+    <button class="locate-btn" id="locateBtn" title="Моё местоположение">📍</button>
     
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -277,11 +294,14 @@
                     const phone = r['phone'] || r['Phone'] || r['Телефон'] || '';
                     const manager = r['Менеджер'] || r['менеджер'] || '';
                     const yandexUrl = `https://yandex.ru/maps/?pt=${lng},${lat}&z=17&l=map`;
+                    const photo = r['фото'] || r['photo'] || r['Photo'] || '';
+                    const photoHtml = photo ? `<div style="font-size:11px;color:#888;margin:4px 0">📷 Фото прикреплено</div>` : '';
                     const html = `
                         <div class="hover-popup" style="min-width:200px">
                             <div class="title">${escapeHtml(name)}</div>
                             <span class="status-badge" style="background:${color}">${statusLbl}</span>
                             ${manager ? `<div style="font-size:12px;color:#666;margin:4px 0">👤 ${escapeHtml(manager)}</div>` : ''}
+                            ${photoHtml}
                             <div class="actions" style="margin-top:8px">
                                 <a href="${yandexUrl}" target="_blank" style="padding:10px 14px;font-size:14px;background:#3b82f6;color:white;border-radius:6px;text-decoration:none;display:inline-block;margin:2px">🗺 Яндекс</a>
                                 ${phone ? `<a href="tel:${phone}" style="padding:10px 14px;font-size:14px;background:#4caf50;color:white;border-radius:6px;text-decoration:none;display:inline-block;margin:2px">📞 ${phone}</a>` : ''}
@@ -481,6 +501,18 @@
         
         document.getElementById('toggleSidebar').onclick = () => {
             document.getElementById('sidebar').classList.toggle('open');
+        };
+        document.getElementById('locateBtn').onclick = () => {
+            if (!navigator.geolocation) {
+                alert('Геолокация не поддерживается');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(pos => {
+                map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+                L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
+                    radius: 8, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.8
+                }).addTo(map).bindPopup('Вы здесь').openPopup();
+            }, () => alert('Не удалось определить местоположение'));
         };
         document.getElementById('filtersBtn').onclick = () => {
             document.getElementById('filtersPanel').classList.toggle('open');
