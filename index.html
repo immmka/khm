@@ -7,19 +7,58 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: 100vh; overflow: hidden; }
         #map { height: 100vh; width: 100%; }
-        .filters {
-            position: absolute; top: 10px; left: 50px; z-index: 1000;
-            background: white; padding: 10px; border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); max-width: 320px;
+        
+        .sidebar {
+            position: absolute; top: 0; left: 0; width: 320px; height: 100vh;
+            background: #1e293b; color: #f1f5f9; z-index: 1000;
+            display: flex; flex-direction: column;
+            transform: translateX(-100%); transition: transform 0.3s;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
         }
-        .filters select, .filters button {
-            margin: 2px; padding: 5px 8px; font-size: 13px;
-            border: 1px solid #ccc; border-radius: 4px; background: white;
+        .sidebar.open { transform: translateX(0); }
+        
+        .sidebar-header {
+            padding: 12px 16px; background: #0f172a; display: flex; gap: 8px; align-items: center;
+            border-bottom: 1px solid #334155;
         }
-        .filters button { cursor: pointer; background: #4a90e2; color: white; border: none; }
-        .filters button:hover { background: #357abd; }
+        .sidebar-header button {
+            padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+        }
+        .btn-filters { background: #334155; color: #f1f5f9; }
+        .btn-add { background: #3b82f6; color: white; }
+        
+        .filters-panel {
+            display: none; padding: 12px; background: #0f172a; border-bottom: 1px solid #334155;
+        }
+        .filters-panel.open { display: block; }
+        .filters-panel select, .filters-panel input {
+            width: 100%; margin: 4px 0; padding: 8px; border-radius: 6px;
+            border: 1px solid #334155; background: #1e293b; color: #f1f5f9; font-size: 13px;
+        }
+        
+        .list-container { flex: 1; overflow-y: auto; padding: 8px; }
+        .list-item {
+            padding: 10px 12px; margin: 4px 0; background: #334155; border-radius: 8px;
+            cursor: pointer; font-size: 13px;
+        }
+        .list-item:hover { background: #475569; }
+        .list-item .name { font-weight: 600; }
+        .list-item .meta { color: #94a3b8; font-size: 12px; margin-top: 2px; }
+        .list-item .status-dot {
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;
+        }
+        
+        .stats { padding: 8px 16px; font-size: 12px; color: #94a3b8; border-top: 1px solid #334155; }
+        
+        .toggle-btn {
+            position: absolute; top: 10px; left: 10px; z-index: 1001;
+            width: 40px; height: 40px; border-radius: 8px; border: none;
+            background: #1e293b; color: white; font-size: 20px; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
         .hover-popup {
             background: white; padding: 8px 10px; border-radius: 6px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 13px; min-width: 180px;
@@ -30,24 +69,20 @@
             font-size: 11px; color: white; margin-bottom: 6px;
         }
         .hover-popup .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-        .hover-popup button {
+        .hover-popup button, .hover-popup a {
             padding: 4px 8px; font-size: 12px; border: 1px solid #ddd;
-            border-radius: 4px; background: #f5f5f5; cursor: pointer;
+            border-radius: 4px; background: #f5f5f5; cursor: pointer; text-decoration: none; color: #333;
         }
-        .hover-popup button:hover { background: #e0e0e0; }
-        .hover-popup button.status-btn { background: #4a90e2; color: white; border: none; }
-        .detail-popup { min-width: 280px; max-width: 340px; font-size: 13px; }
+        .detail-popup { min-width: 280px; max-width: 340px; font-size: 13px; padding: 10px; }
         .detail-popup .header { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #222; }
         .detail-popup .row { margin: 4px 0; display: flex; }
         .detail-popup .row .label { color: #888; min-width: 80px; }
         .detail-popup .row .value { color: #222; flex: 1; word-break: break-word; }
         .detail-popup .actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; border-top: 1px solid #eee; padding-top: 8px; }
-        .detail-popup .actions button {
+        .detail-popup .actions button, .detail-popup .actions a {
             padding: 5px 10px; font-size: 12px; border: 1px solid #ddd;
-            border-radius: 4px; background: white; cursor: pointer;
+            border-radius: 4px; background: white; cursor: pointer; text-decoration: none; color: #333;
         }
-        .detail-popup .actions button:hover { background: #f0f0f0; }
-        .detail-popup .actions button.primary { background: #4a90e2; color: white; border: none; }
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5); z-index: 2000;
@@ -66,41 +101,55 @@
         }
         .modal textarea { min-height: 70px; resize: vertical; }
         .modal .buttons { margin-top: 15px; display: flex; gap: 8px; justify-content: flex-end; }
-        .modal .buttons button {
-            padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;
-        }
+        .modal .buttons button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
         .modal .buttons .cancel { background: #e0e0e0; }
-        .modal .buttons .save { background: #4a90e2; color: white; }
-        .status-working { background: #4caf50; }
-        .status-not { background: #f44336; }
-        .status-potential { background: #ff9800; }
-        .status-unknown { background: #9e9e9e; }
+        .modal .buttons .save { background: #3b82f6; color: white; }
         .leaflet-popup-content-wrapper { padding: 0; }
         .leaflet-popup-content { margin: 0; }
+        
+        @media (max-width: 768px) {
+            .sidebar { width: 85vw; max-width: 320px; }
+            .toggle-btn { width: 48px; height: 48px; font-size: 22px; }
+            .sidebar-header button { padding: 10px 14px; font-size: 14px; }
+            .list-item { padding: 14px; }
+            .hover-popup .actions a { padding: 10px 14px; font-size: 14px; }
+            .detail-popup { max-width: 90vw; }
+            .modal { width: 95%; padding: 16px; }
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    <div class="filters">
-        <select id="filter-status">
-            <option value="">Все статусы</option>
-            <option value="working">Работаю</option>
-            <option value="not">Не работаю</option>
-            <option value="potential">Потенциал</option>
-            <option value="unknown">Неизвестно</option>
-        </select>
-        <select id="filter-category">
-            <option value="">Все категории</option>
-            <option value="Ресторан">Ресторан</option>
-            <option value="Бар">Бар</option>
-            <option value="Клуб">Клуб</option>
-            <option value="Лаундж">Лаундж</option>
-        </select>
-        <select id="filter-manager">
-            <option value="">Все менеджеры</option>
-        </select>
-        <button onclick="loadData()">🔄 Обновить</button>
-        <button onclick="exportCSV()">📥 CSV</button>
+    <button class="toggle-btn" id="toggleSidebar">☰</button>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="btn-filters" id="filtersBtn">Фильтры</button>
+            <button class="btn-add" id="addBtn">+ Добавить</button>
+        </div>
+        <div class="filters-panel" id="filtersPanel">
+            <input id="searchInput" placeholder="Поиск по названию или адресу...">
+            <select id="filter-status">
+                <option value="">Все статусы</option>
+                <option value="working">Работаю</option>
+                <option value="not">Не работаю</option>
+                <option value="potential">Потенциал</option>
+                <option value="unknown">Неизвестно</option>
+            </select>
+            <select id="filter-category">
+                <option value="">Все категории</option>
+                <option value="Ресторан">Ресторан</option>
+                <option value="Бар">Бар</option>
+                <option value="Клуб">Клуб</option>
+                <option value="Лаундж">Лаундж</option>
+            </select>
+            <select id="filter-manager">
+                <option value="">Все менеджеры</option>
+            </select>
+            <button onclick="loadData()" style="width:100%;margin-top:8px;padding:8px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer">🔄 Обновить</button>
+        </div>
+        <div class="list-container" id="listContainer"></div>
+        <div class="stats" id="statsBar">Загрузка...</div>
     </div>
     
     <div class="modal-overlay" id="edit-modal">
@@ -173,6 +222,7 @@
                 allRecords = Array.isArray(data) ? data : [];
                 populateManagerFilter();
                 renderMarkers();
+                renderList();
             } catch (e) {
                 console.error('Ошибка загрузки:', e);
                 alert('Не удалось загрузить данные. Проверь Apps Script.');
@@ -221,36 +271,24 @@
                 const marker = L.marker([lat, lng], { icon }).addTo(map);
                 marker._record = r;
                 
-                marker.on('mouseover', function(e) {
+                marker.on('click', function(e) {
                     const name = r['Название заведения'] || r['название'] || '—';
                     const statusLbl = statusLabel(status);
                     const phone = r['phone'] || r['Phone'] || r['Телефон'] || '';
-                    const yandexUrl = `https://yandex.ru/maps/?ll=${lng},${lat}&z=17&pt=${lng},${lat},pm2rdm&text=${encodeURIComponent(name)}`;
+                    const manager = r['Менеджер'] || r['менеджер'] || '';
+                    const yandexUrl = `https://yandex.ru/maps/?pt=${lng},${lat}&z=17&l=map`;
                     const html = `
-                        <div class="hover-popup">
+                        <div class="hover-popup" style="min-width:200px">
                             <div class="title">${escapeHtml(name)}</div>
                             <span class="status-badge" style="background:${color}">${statusLbl}</span>
-                            <div class="actions">
-                                <button onclick="openDetailPopup(this)" data-lat="${lat}" data-lng="${lng}">📋 Подробнее</button>
-                                ${phone ? `<a href="tel:${phone}" style="padding:4px 8px;font-size:12px;background:#4caf50;color:white;border-radius:4px;text-decoration:none">📞</a>` : ''}
-                                <a href="${yandexUrl}" target="_blank" style="padding:4px 8px;font-size:12px;background:#3b82f6;color:white;border-radius:4px;text-decoration:none">🗺 Яндекс</a>
+                            ${manager ? `<div style="font-size:12px;color:#666;margin:4px 0">👤 ${escapeHtml(manager)}</div>` : ''}
+                            <div class="actions" style="margin-top:8px">
+                                <a href="${yandexUrl}" target="_blank" style="padding:10px 14px;font-size:14px;background:#3b82f6;color:white;border-radius:6px;text-decoration:none;display:inline-block;margin:2px">🗺 Яндекс</a>
+                                ${phone ? `<a href="tel:${phone}" style="padding:10px 14px;font-size:14px;background:#4caf50;color:white;border-radius:6px;text-decoration:none;display:inline-block;margin:2px">📞 ${phone}</a>` : ''}
                             </div>
                         </div>
                     `;
-                    const popup = L.popup({ closeButton: false, closeOnClick: false, className: 'hover-popup-wrapper', offset: [0, -5] })
-                        .setLatLng(e.latlng).setContent(html).openOn(map);
-                    marker._hoverPopup = popup;
-                });
-                
-                marker.on('mouseout', function() {
-                    if (marker._hoverPopup) {
-                        map.closePopup(marker._hoverPopup);
-                        marker._hoverPopup = null;
-                    }
-                });
-                
-                marker.on('click', function(e) {
-                    openDetailPopupForRecord(r);
+                    L.popup({ maxWidth: 280 }).setLatLng(e.latlng).setContent(html).openOn(map);
                 });
                 
                 markers.push(marker);
@@ -274,7 +312,7 @@
             const category = r['Категория'] || r['category'] || '—';
             const updated = r['update'] || r['Update'] || '—';
             
-            const yandexUrl = `https://yandex.ru/maps/?ll=${lng},${lat}&z=17&pt=${lng},${lat},pm2rdm&text=${encodeURIComponent(name)}`;
+            const yandexUrl = `https://yandex.ru/maps/?pt=${lng},${lat}&z=17&l=map`;
             const html = `
                 <div class="detail-popup">
                     <div class="header">${escapeHtml(name)}</div>
@@ -406,9 +444,51 @@
             return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
         
-        document.getElementById('filter-status').addEventListener('change', renderMarkers);
-        document.getElementById('filter-category').addEventListener('change', renderMarkers);
-        document.getElementById('filter-manager').addEventListener('change', renderMarkers);
+        function renderList() {
+            const container = document.getElementById('listContainer');
+            const filtered = getFilteredRecords();
+            const search = (document.getElementById('searchInput').value || '').toLowerCase();
+            const shown = filtered.filter(r => {
+                const name = (r['Название заведения'] || r['название'] || '').toLowerCase();
+                const addr = (r['address'] || r['Адрес'] || '').toLowerCase();
+                return !search || name.includes(search) || addr.includes(search);
+            });
+            container.innerHTML = shown.slice(0, 100).map(r => {
+                const name = r['Название заведения'] || r['название'] || '—';
+                const status = normalizeStatus(r['Status'] || r['status']);
+                const color = statusColor(status);
+                const manager = r['Менеджер'] || r['менеджер'] || '';
+                return `<div class="list-item" onclick="focusPlace('${escapeHtml(name)}')">
+                    <div class="name"><span class="status-dot" style="background:${color}"></span>${escapeHtml(name)}</div>
+                    <div class="meta">${statusLabel(status)}${manager ? ' · ' + escapeHtml(manager) : ''}</div>
+                </div>`;
+            }).join('') || '<div style="padding:20px;color:#94a3b8;text-align:center">Ничего не найдено</div>';
+            document.getElementById('statsBar').textContent = `Показано: ${shown.length} · На карте: ${filtered.filter(r => r.lat && r.lng).length}`;
+        }
+        
+        function focusPlace(name) {
+            const r = allRecords.find(x => (x['Название заведения'] || x['название']) === name);
+            if (r) {
+                const lat = parseFloat(r['lat'] || r['Широта']);
+                const lng = parseFloat(r['lng'] || r['Долгота']);
+                if (lat && lng) {
+                    map.setView([lat, lng], 16);
+                    openDetailPopupForRecord(r);
+                }
+            }
+            if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+        }
+        
+        document.getElementById('toggleSidebar').onclick = () => {
+            document.getElementById('sidebar').classList.toggle('open');
+        };
+        document.getElementById('filtersBtn').onclick = () => {
+            document.getElementById('filtersPanel').classList.toggle('open');
+        };
+        document.getElementById('searchInput').oninput = renderList;
+        document.getElementById('filter-status').onchange = () => { renderMarkers(); renderList(); };
+        document.getElementById('filter-category').onchange = () => { renderMarkers(); renderList(); };
+        document.getElementById('filter-manager').onchange = () => { renderMarkers(); renderList(); };
         
         loadData();
     </script>
