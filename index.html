@@ -235,6 +235,11 @@
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        window.onerror = function(msg, url, line, col, error) {
+            console.error('Ошибка:', msg, 'строка:', line);
+            return false;
+        };
+        
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOQsUOyedD-u7szCUr6Z925mnYV4KKOLNq0rvN9IyO54DMz42VvpBw7KWZYKtO2jLk/exec';
         
         const map = L.map('map').setView([55.7558, 37.6173], 11);
@@ -271,14 +276,16 @@
         async function loadData() {
             try {
                 const resp = await fetch(SCRIPT_URL + '?action=list');
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
                 const data = await resp.json();
                 allRecords = Array.isArray(data) ? data : [];
+                console.log('Загружено записей:', allRecords.length);
                 populateManagerFilter();
                 renderMarkers();
                 renderList();
             } catch (e) {
                 console.error('Ошибка загрузки:', e);
-                alert('Не удалось загрузить данные. Проверь Apps Script.');
+                alert('Не удалось загрузить данные: ' + e.message);
             }
         }
         
