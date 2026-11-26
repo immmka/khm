@@ -44,7 +44,7 @@
             cursor: pointer; font-size: 13px;
         }
         .list-item:hover { background: #475569; }
-        .list-item .name { font-weight: 600; }
+        .list-item .name { font-weight: 600; color: #e2e8f0; }
         .list-item .meta { color: #94a3b8; font-size: 12px; margin-top: 2px; }
         .list-item .status-dot {
             display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;
@@ -169,7 +169,41 @@
         <div class="stats" id="statsBar">Загрузка...</div>
     </div>
     
-    <div class="modal-overlay" id="edit-modal">
+    <div class="modal-overlay" id="add-modal">
+        <div class="modal">
+            <h3>Добавить заведение</h3>
+            <input type="hidden" id="add-lat">
+            <input type="hidden" id="add-lng">
+            <label>Название</label><input type="text" id="add-name">
+            <label>Адрес</label><input type="text" id="add-address">
+            <label>Статус</label>
+            <select id="add-status" onchange="toggleManagerSelect()">
+                <option value="unknown">Неизвестно</option>
+                <option value="potential">Потенциал</option>
+                <option value="working">Работаю</option>
+                <option value="not">Не работаю</option>
+            </select>
+            <div id="manager-select-wrap" style="display:none">
+                <label>Менеджер</label>
+                <select id="add-manager">
+                    <option value="">— выбери —</option>
+                    <option>Дима б</option>
+                    <option>Лера</option>
+                    <option>Алина</option>
+                    <option>Дима ч</option>
+                    <option>Антон</option>
+                    <option>Артур</option>
+                    <option>Александр</option>
+                </select>
+            </div>
+            <label>Телефон</label><input type="text" id="add-phone">
+            <label>Заметки</label><textarea id="add-notes"></textarea>
+            <div class="buttons">
+                <button class="cancel" onclick="document.getElementById('add-modal').classList.remove('active')">Отмена</button>
+                <button class="save" onclick="saveNewPlace()">Сохранить</button>
+            </div>
+        </div>
+    </div>
         <div class="modal">
             <h3>Редактировать заведение</h3>
             <input type="hidden" id="edit-row-index">
@@ -289,26 +323,26 @@
                 marker._record = r;
                 
                 marker.on('click', function(e) {
+                    L.DomEvent.stopPropagation(e);
                     const name = r['Название заведения'] || r['название'] || '—';
-                    const statusLbl = statusLabel(status);
                     const phone = r['phone'] || r['Phone'] || r['Телефон'] || '';
                     const manager = r['Менеджер'] || r['менеджер'] || '';
-                    const yandexUrl = `https://yandex.ru/maps/?pt=${lng},${lat}&z=17&l=map`;
-                    const photo = r['фото'] || r['photo'] || r['Photo'] || '';
-                    const photoHtml = photo ? `<div style="font-size:11px;color:#888;margin:4px 0">📷 Фото прикреплено</div>` : '';
+                    const addr = r['address'] || r['Адрес'] || '';
+                    const shortAddr = addr.split(',').slice(0, 2).join(', ').trim();
+                    const yandexUrl = `https://yandex.ru/maps/?text=${encodeURIComponent(name + ', ' + addr)}`;
                     const html = `
-                        <div class="hover-popup" style="min-width:200px">
-                            <div class="title">${escapeHtml(name)}</div>
-                            <span class="status-badge" style="background:${color}">${statusLbl}</span>
-                            ${manager ? `<div style="font-size:12px;color:#666;margin:4px 0">👤 ${escapeHtml(manager)}</div>` : ''}
-                            ${photoHtml}
-                            <div class="actions" style="margin-top:8px">
-                                <a href="${yandexUrl}" target="_blank" style="padding:10px 14px;font-size:14px;background:#3b82f6;color:white;border-radius:6px;text-decoration:none;display:inline-block;margin:2px">🗺 Яндекс</a>
-                                ${phone ? `<a href="tel:${phone}" style="padding:10px 14px;font-size:14px;background:#4caf50;color:white;border-radius:6px;text-decoration:none;display:inline-block;margin:2px">📞 ${phone}</a>` : ''}
+                        <div style="padding:10px;min-width:180px">
+                            <div style="font-weight:600;font-size:14px">${escapeHtml(name)}</div>
+                            <div style="font-size:11px;color:#666;margin-top:2px">${statusLabel(status)}</div>
+                            ${manager ? `<div style="font-size:12px;margin-top:2px">👤 ${escapeHtml(manager)}</div>` : ''}
+                            ${shortAddr ? `<div style="font-size:11px;color:#888;margin-top:2px">📍 ${escapeHtml(shortAddr)}</div>` : ''}
+                            <div style="margin-top:8px;display:flex;gap:4px">
+                                ${phone ? `<a href="tel:${phone}" style="padding:6px 10px;background:#4caf50;color:#fff;border-radius:4px;text-decoration:none">📞</a>` : ''}
+                                <a href="${yandexUrl}" target="_blank" style="padding:6px 10px;background:#3b82f6;color:#fff;border-radius:4px;text-decoration:none;font-size:12px">Яндекс</a>
                             </div>
                         </div>
                     `;
-                    L.popup({ maxWidth: 280 }).setLatLng(e.latlng).setContent(html).openOn(map);
+                    L.popup({ maxWidth: 240 }).setLatLng([lat, lng]).setContent(html).openOn(map);
                 });
                 
                 markers.push(marker);
@@ -521,6 +555,47 @@
         document.getElementById('filter-status').onchange = () => { renderMarkers(); renderList(); };
         document.getElementById('filter-category').onchange = () => { renderMarkers(); renderList(); };
         document.getElementById('filter-manager').onchange = () => { renderMarkers(); renderList(); };
+        
+        map.on('click', async function(e) {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+            let addr = '';
+            try {
+                const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`);
+                const d = await r.json();
+                addr = d.display_name || '';
+            } catch(err) {}
+            document.getElementById('add-lat').value = lat;
+            document.getElementById('add-lng').value = lng;
+            document.getElementById('add-address').value = addr;
+            document.getElementById('add-modal').classList.add('active');
+        });
+        
+        function toggleManagerSelect() {
+            const status = document.getElementById('add-status').value;
+            document.getElementById('manager-select-wrap').style.display = status === 'working' ? 'block' : 'none';
+        }
+        
+        async function saveNewPlace() {
+            const name = document.getElementById('add-name').value.trim();
+            if (!name) { alert('Введи название'); return; }
+            const data = {
+                action: 'add',
+                name: name,
+                address: document.getElementById('add-address').value.trim(),
+                status: document.getElementById('add-status').value,
+                manager: document.getElementById('add-status').value === 'working' ? document.getElementById('add-manager').value : '',
+                phone: document.getElementById('add-phone').value.trim(),
+                notes: document.getElementById('add-notes').value.trim(),
+                lat: document.getElementById('add-lat').value,
+                lng: document.getElementById('add-lng').value
+            };
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', headers: {'Content-Type': 'text/plain'}, body: JSON.stringify(data) });
+                document.getElementById('add-modal').classList.remove('active');
+                setTimeout(loadData, 800);
+            } catch(e) { alert('Ошибка'); }
+        }
         
         loadData();
     </script>
